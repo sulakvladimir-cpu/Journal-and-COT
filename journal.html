@@ -482,11 +482,28 @@ tr:hover{background:rgba(255,255,255,.02)}
 </div>
 
 <div class="modal" id="tradeModal"><div class="modal-content"><div class="modal-header"><h3>Trade Details</h3><button class="modal-close" onclick="closeModal('tradeModal')">×</button></div><div class="modal-body" id="tradeModalBody"></div></div></div>
-<div class="modal" id="settingsModal"><div class="modal-content" style="max-width:500px"><div class="modal-header"><h3>⚙️ Settings</h3><button class="modal-close" onclick="closeModal('settingsModal')">×</button></div><div class="modal-body"><div class="settings-grid">
+<div class="modal" id="settingsModal"><div class="modal-content" style="max-width:550px"><div class="modal-header"><h3>⚙️ Settings</h3><button class="modal-close" onclick="closeModal('settingsModal')">×</button></div><div class="modal-body"><div class="settings-grid">
 <div class="setting-item"><label>Daily Loss Limit ($)</label><input type="number" id="setLimit" value="200" onchange="saveSettings()"></div>
 <div class="setting-item"><label>Default Risk ($)</label><input type="number" id="setRisk" value="50" onchange="saveSettings()"></div>
 <div class="setting-item"><label>Account Size ($)</label><input type="number" id="setAccount" value="10000" onchange="saveSettings()"></div>
-</div><div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)"><button class="btn" style="background:var(--red);color:#fff" onclick="clearAll()">🗑️ Delete All Data</button></div></div></div></div>
+</div>
+<div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+<h4 style="color:var(--gold);margin-bottom:15px">📸 Screenshot Storage</h4>
+<p style="color:var(--text2);font-size:.85rem;margin-bottom:15px">Default: Imgur (no setup). For permanent storage, use Cloudinary (free 25GB).</p>
+<div class="setting-item" style="margin-bottom:10px">
+<label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+<input type="checkbox" id="setCloudinaryEnabled" onchange="toggleCloudinary()" style="width:18px;height:18px">
+<span>Use Cloudinary (permanent storage)</span>
+</label>
+</div>
+<div id="cloudinaryFields" style="display:none;padding:15px;background:var(--bg2);border-radius:8px;margin-top:10px">
+<p style="color:var(--text2);font-size:.8rem;margin-bottom:10px">1. Sign up at <a href="https://cloudinary.com" target="_blank" style="color:var(--gold)">cloudinary.com</a><br>2. Settings → Upload → Add upload preset (Unsigned)<br>3. Copy Cloud Name & Preset Name below:</p>
+<div class="setting-item" style="margin-bottom:10px"><label>Cloud Name</label><input type="text" id="setCloudName" placeholder="e.g. dxxxxx" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)"></div>
+<div class="setting-item"><label>Upload Preset</label><input type="text" id="setUploadPreset" placeholder="e.g. trading_journal" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)"></div>
+<button class="btn btn-primary" style="margin-top:10px" onclick="saveCloudinarySettings()">Save Cloudinary Settings</button>
+</div>
+</div>
+<div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)"><button class="btn" style="background:var(--red);color:#fff" onclick="clearAll()">🗑️ Delete All Data</button></div></div></div></div>
 <div class="modal" id="dayModal"><div class="modal-content"><div class="modal-header"><h3 id="dayModalTitle">Day</h3><button class="modal-close" onclick="closeModal('dayModal')">×</button></div><div class="modal-body" id="dayModalBody"></div></div></div>
 <div class="modal" id="accountModal"><div class="modal-content" style="max-width:600px"><div class="modal-header"><h3>🏦 Manage Accounts</h3><button class="modal-close" onclick="closeModal('accountModal')">×</button></div><div class="modal-body">
 <div style="margin-bottom:20px"><div style="display:flex;gap:10px"><input type="text" id="newAccountName" placeholder="Account name (e.g. FTMO 100k, Personal, IC Markets)" style="flex:1;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><input type="text" id="newAccountColor" placeholder="#FFD700" value="#FFD700" style="width:100px;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><button class="btn btn-primary" onclick="addAccount()">+ Add</button></div></div>
@@ -783,11 +800,26 @@ if(!riskVal){showToast('Enter Risk Amount','error');return}
 var editId=document.getElementById('editId').value;
 var entry=parseFloat(entryVal),sl=parseFloat(slVal),tp=parseFloat(tpVal);
 var rr=dir==='Long'?(tp-entry)/(entry-sl):(entry-tp)/(sl-entry);
-var trade={id:editId||Date.now().toString(),account:document.getElementById('tradeAccount').value||'default',strategy:document.getElementById('tradeStrategy').value||'',date:document.getElementById('tradeDate').value,session:session,pair:pair,direction:dir,zone:zone,timeframe:tf,setup:setup,htfBias:document.getElementById('tradeHTFBias').value,htfTrend:document.getElementById('tradeHTFTrend').value,execTF:document.getElementById('tradeExecTF').value,execTrend:document.getElementById('tradeExecTrend').value,liquidity:document.getElementById('tradeLiquidity').value,arrival:document.getElementById('tradeArrival').value,baseCandles:document.getElementById('tradeBaseCandles').value,baseVolume:document.getElementById('tradeBaseVolume').value,legOut:document.getElementById('tradeLegOut').value,zoneFresh:document.getElementById('tradeZoneFresh').value,bigBro:document.getElementById('tradeBigBro').value,smallBro:document.getElementById('tradeSmallBro').value,flipZone:document.getElementById('tradeFlipZone').value,zoneScore:calculateZoneScore(),entry:entry,sl:sl,tp:tp,size:parseFloat(sizeVal),risk:parseFloat(riskVal),rr:rr,outcome:document.getElementById('tradeOutcome').value,pnl:parseFloat(document.getElementById('tradePnL').value)||0,emotion:parseInt(document.getElementById('tradeEmotion').value)||3,rating:document.getElementById('tradeRating').value,mistakes:document.getElementById('tradeMistakes').value,preNotes:document.getElementById('tradePreNotes').value,postNotes:document.getElementById('tradePostNotes').value,lessons:document.getElementById('tradeLessons').value,screenshot:document.getElementById('imgPreview').src||''};
-if(editId){var i=trades.findIndex(function(t){return t.id===editId});if(i!==-1)trades[i]=trade}else trades.unshift(trade);
-saveTrades();resetForm();updateAll();showTab('history');showToast(editId?'Updated!':'Saved!')});
+var trade={id:editId||Date.now().toString(),account:document.getElementById('tradeAccount').value||'default',strategy:document.getElementById('tradeStrategy').value||'',date:document.getElementById('tradeDate').value,session:session,pair:pair,direction:dir,zone:zone,timeframe:tf,setup:setup,htfBias:document.getElementById('tradeHTFBias').value,htfTrend:document.getElementById('tradeHTFTrend').value,execTF:document.getElementById('tradeExecTF').value,execTrend:document.getElementById('tradeExecTrend').value,liquidity:document.getElementById('tradeLiquidity').value,arrival:document.getElementById('tradeArrival').value,baseCandles:document.getElementById('tradeBaseCandles').value,baseVolume:document.getElementById('tradeBaseVolume').value,legOut:document.getElementById('tradeLegOut').value,zoneFresh:document.getElementById('tradeZoneFresh').value,bigBro:document.getElementById('tradeBigBro').value,smallBro:document.getElementById('tradeSmallBro').value,flipZone:document.getElementById('tradeFlipZone').value,zoneScore:calculateZoneScore(),entry:entry,sl:sl,tp:tp,size:parseFloat(sizeVal),risk:parseFloat(riskVal),rr:rr,outcome:document.getElementById('tradeOutcome').value,pnl:parseFloat(document.getElementById('tradePnL').value)||0,emotion:parseInt(document.getElementById('tradeEmotion').value)||3,rating:document.getElementById('tradeRating').value,mistakes:document.getElementById('tradeMistakes').value,preNotes:document.getElementById('tradePreNotes').value,postNotes:document.getElementById('tradePostNotes').value,lessons:document.getElementById('tradeLessons').value,screenshot:''};
+var preview=document.getElementById('imgPreview');
+var hasNewImage=preview.style.display==='block'&&preview.src&&preview.dataset.local==='true';
+if(hasNewImage){
+document.querySelector('#tradeForm button[type="submit"]').disabled=true;
+document.querySelector('#tradeForm button[type="submit"]').textContent='⏳ Uploading...';
+uploadImage(preview.src,function(url){
+trade.screenshot=url;
+finishSaveTrade(trade,editId);
+document.querySelector('#tradeForm button[type="submit"]').disabled=false;
+document.querySelector('#tradeForm button[type="submit"]').textContent='💾 Save Trade';
+})}else{
+trade.screenshot=preview.src||'';
+finishSaveTrade(trade,editId)}});
 
-function resetForm(){document.getElementById('tradeForm').reset();document.getElementById('editId').value='';document.getElementById('editIndicator').style.display='none';document.getElementById('imgPreview').style.display='none';document.getElementById('imgPreview').src='';document.querySelectorAll('.toggle-btn,.emotion-btn,.rating-btn,.mistake-tag').forEach(function(b){b.classList.remove('selected')});document.querySelector('.emotion-btn[data-v="3"]').classList.add('selected');document.getElementById('rrDisplay').textContent='-';document.getElementById('zoneScoreDisplay').textContent='-';setDefaultDate()}
+function finishSaveTrade(trade,editId){
+if(editId){var i=trades.findIndex(function(t){return t.id===editId});if(i!==-1)trades[i]=trade}else trades.unshift(trade);
+saveTrades();resetForm();updateAll();showTab('history');showToast(editId?'Updated!':'Saved!')}
+
+function resetForm(){document.getElementById('tradeForm').reset();document.getElementById('editId').value='';document.getElementById('editIndicator').style.display='none';var preview=document.getElementById('imgPreview');preview.style.display='none';preview.src='';preview.dataset.local='';document.querySelectorAll('.toggle-btn,.emotion-btn,.rating-btn,.mistake-tag').forEach(function(b){b.classList.remove('selected')});document.querySelector('.emotion-btn[data-v="3"]').classList.add('selected');document.getElementById('rrDisplay').textContent='-';document.getElementById('zoneScoreDisplay').textContent='-';setDefaultDate()}
 
 function updateDashboard(){
 var allTrades=getFilteredTrades();
@@ -846,7 +878,7 @@ function filterTrades(){var out=document.getElementById('filterOutcome').value,p
 function populateFilters(){var pairs=[];trades.forEach(function(t){if(t.pair&&pairs.indexOf(t.pair)===-1)pairs.push(t.pair)});pairs.sort();document.getElementById('filterPair').innerHTML='<option value="">All Pairs</option>'+pairs.map(function(p){return '<option>'+p+'</option>'}).join('')}
 
 function viewTrade(id){var t=trades.find(function(x){return x.id===id});if(!t)return;var acc=accounts.find(function(a){return a.id===t.account})||accounts[0];var strat=strategies.find(function(s){return s.id===t.strategy});document.getElementById('tradeModalBody').innerHTML='<div class="trade-detail-grid"><div class="trade-detail-item"><label>Account</label><span style="color:'+acc.color+'">'+acc.name+'</span></div>'+(strat?'<div class="trade-detail-item"><label>Strategy</label><span style="color:'+strat.color+'">'+strat.name+'</span></div>':'')+'<div class="trade-detail-item"><label>Date</label><span>'+(t.date?new Date(t.date).toLocaleString():'-')+'</span></div><div class="trade-detail-item"><label>Session</label><span>'+(t.session||'-')+'</span></div><div class="trade-detail-item"><label>Pair</label><span>'+t.pair+'</span></div><div class="trade-detail-item"><label>Direction</label><span class="badge badge-'+(t.direction||'').toLowerCase()+'">'+t.direction+'</span></div><div class="trade-detail-item"><label>Zone</label><span class="badge badge-'+(t.zone||'').toLowerCase()+'">'+t.zone+'</span></div><div class="trade-detail-item"><label>Setup</label><span>'+t.setup+'</span></div><div class="trade-detail-item"><label>Analysis TF</label><span>'+(t.timeframe||'-')+'</span></div><div class="trade-detail-item"><label>HTF Trend</label><span>'+(t.htfTrend||'-')+'</span></div><div class="trade-detail-item"><label>Execution TF</label><span>'+(t.execTF||'-')+'</span></div><div class="trade-detail-item"><label>Exec vs HTF</label><span>'+(t.execTrend||'-')+'</span></div><div class="trade-detail-item"><label>R:R</label><span style="color:var(--gold)">1:'+(t.rr||0).toFixed(2)+'</span></div><div class="trade-detail-item"><label>Outcome</label><span class="badge badge-'+(t.outcome||'').toLowerCase()+'">'+t.outcome+'</span></div><div class="trade-detail-item"><label>P&L</label><span class="'+((t.pnl||0)>=0?'positive':'negative')+'">$'+(t.pnl||0).toFixed(2)+'</span></div><div class="trade-detail-item"><label>Rating</label><span>'+(t.rating||'-')+'</span></div><div class="trade-detail-item"><label>Emotion</label><span>'+(['😫','😕','😐','🙂','😎'][t.emotion-1]||'-')+'</span></div><div class="trade-detail-item"><label>Zone Score</label><span style="color:'+(t.zoneScore>=70?'var(--green)':t.zoneScore>=50?'var(--gold)':'var(--red)')+'">'+(t.zoneScore||'-')+'%</span></div></div>'+(t.liquidity||t.arrival||t.baseCandles?'<div style="margin-top:15px;padding:15px;background:var(--bg2);border-radius:8px;border-left:4px solid var(--blue)"><strong style="color:var(--blue)">🎯 OTC Zone Quality</strong><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px"><div><small style="color:var(--text2)">Liquidity</small><div>'+(t.liquidity==='2'?'✅ Taken First':t.liquidity==='1'?'❓ Unclear':'❌ None')+'</div></div><div><small style="color:var(--text2)">Arrival</small><div>'+(t.arrival==='2'?'✅ Fast & Clean':'⚠️ Choppy')+'</div></div><div><small style="color:var(--text2)">Base</small><div>'+(t.baseCandles||'-')+' candles</div></div><div><small style="color:var(--text2)">Volume Score</small><div>'+(t.baseVolume||'-')+'</div></div><div><small style="color:var(--text2)">Leg-Out</small><div>'+(t.legOut||'-')+'</div></div><div><small style="color:var(--text2)">Freshness</small><div>'+(t.zoneFresh||'-')+'</div></div><div><small style="color:var(--text2)">Big Brother</small><div>'+(t.bigBro||'-')+'</div></div><div><small style="color:var(--text2)">Small Brother</small><div>'+(t.smallBro||'-')+'</div></div><div><small style="color:var(--text2)">Flip Zone</small><div>'+(t.flipZone||'-')+'</div></div></div></div>':'')+(t.mistakes?'<div style="margin-top:15px"><strong>Mistakes:</strong> '+t.mistakes.split(',').map(function(m){return '<span class="badge" style="background:rgba(255,23,68,.15);color:var(--red);margin:2px">'+m+'</span>'}).join('')+'</div>':'')+(t.preNotes?'<div style="margin-top:15px"><strong>Pre-Trade:</strong><p style="background:var(--bg2);padding:10px;border-radius:6px;margin-top:5px">'+t.preNotes+'</p></div>':'')+(t.postNotes?'<div style="margin-top:15px"><strong>Post-Trade:</strong><p style="background:var(--bg2);padding:10px;border-radius:6px;margin-top:5px">'+t.postNotes+'</p></div>':'')+(t.lessons?'<div style="margin-top:15px"><strong>Lessons:</strong><p style="background:var(--bg2);padding:10px;border-radius:6px;margin-top:5px">'+t.lessons+'</p></div>':'')+(t.screenshot?'<img src="'+t.screenshot+'" style="width:100%;border-radius:8px;margin-top:15px">':'');openModal('tradeModal')}
-function editTrade(id){closeModal('dayModal');var t=trades.find(function(x){return x.id===id});if(!t)return;document.getElementById('editId').value=id;document.getElementById('editIndicator').style.display='inline';document.getElementById('tradeAccount').value=t.account||'default';document.getElementById('tradeStrategy').value=t.strategy||'';document.getElementById('tradeDate').value=t.date||'';document.getElementById('tradeSession').value=t.session||'';document.getElementById('tradePair').value=t.pair||'';if(t.direction)setDirection(t.direction);if(t.zone)setZone(t.zone);document.getElementById('tradeTimeframe').value=t.timeframe||'';document.getElementById('tradeSetup').value=t.setup||'';document.getElementById('tradeHTFBias').value=t.htfBias||'';document.getElementById('tradeHTFTrend').value=t.htfTrend||'';document.getElementById('tradeExecTF').value=t.execTF||'';document.getElementById('tradeExecTrend').value=t.execTrend||'';document.getElementById('tradeLiquidity').value=t.liquidity||'';document.getElementById('tradeArrival').value=t.arrival||'';document.getElementById('tradeBaseCandles').value=t.baseCandles||'';document.getElementById('tradeBaseVolume').value=t.baseVolume||'';document.getElementById('tradeLegOut').value=t.legOut||'';document.getElementById('tradeZoneFresh').value=t.zoneFresh||'';document.getElementById('tradeBigBro').value=t.bigBro||'';document.getElementById('tradeSmallBro').value=t.smallBro||'';document.getElementById('tradeFlipZone').value=t.flipZone||'';document.getElementById('tradeEntry').value=t.entry;document.getElementById('tradeSL').value=t.sl;document.getElementById('tradeTP').value=t.tp;document.getElementById('tradeSize').value=t.size;document.getElementById('tradeRisk').value=t.risk;document.getElementById('tradeOutcome').value=t.outcome;document.getElementById('tradePnL').value=t.pnl;setEmotion(t.emotion||3);if(t.rating)setRating(t.rating);document.getElementById('tradePreNotes').value=t.preNotes||'';document.getElementById('tradePostNotes').value=t.postNotes||'';document.getElementById('tradeLessons').value=t.lessons||'';if(t.mistakes)t.mistakes.split(',').forEach(function(m){var tag=document.querySelector('.mistake-tag[data-v="'+m+'"]');if(tag)tag.classList.add('selected')});document.getElementById('tradeMistakes').value=t.mistakes||'';if(t.screenshot){document.getElementById('imgPreview').src=t.screenshot;document.getElementById('imgPreview').style.display='block'}calculateRR();calculateZoneScore();togglePnL();showTab('entry')}
+function editTrade(id){closeModal('dayModal');var t=trades.find(function(x){return x.id===id});if(!t)return;document.getElementById('editId').value=id;document.getElementById('editIndicator').style.display='inline';document.getElementById('tradeAccount').value=t.account||'default';document.getElementById('tradeStrategy').value=t.strategy||'';document.getElementById('tradeDate').value=t.date||'';document.getElementById('tradeSession').value=t.session||'';document.getElementById('tradePair').value=t.pair||'';if(t.direction)setDirection(t.direction);if(t.zone)setZone(t.zone);document.getElementById('tradeTimeframe').value=t.timeframe||'';document.getElementById('tradeSetup').value=t.setup||'';document.getElementById('tradeHTFBias').value=t.htfBias||'';document.getElementById('tradeHTFTrend').value=t.htfTrend||'';document.getElementById('tradeExecTF').value=t.execTF||'';document.getElementById('tradeExecTrend').value=t.execTrend||'';document.getElementById('tradeLiquidity').value=t.liquidity||'';document.getElementById('tradeArrival').value=t.arrival||'';document.getElementById('tradeBaseCandles').value=t.baseCandles||'';document.getElementById('tradeBaseVolume').value=t.baseVolume||'';document.getElementById('tradeLegOut').value=t.legOut||'';document.getElementById('tradeZoneFresh').value=t.zoneFresh||'';document.getElementById('tradeBigBro').value=t.bigBro||'';document.getElementById('tradeSmallBro').value=t.smallBro||'';document.getElementById('tradeFlipZone').value=t.flipZone||'';document.getElementById('tradeEntry').value=t.entry;document.getElementById('tradeSL').value=t.sl;document.getElementById('tradeTP').value=t.tp;document.getElementById('tradeSize').value=t.size;document.getElementById('tradeRisk').value=t.risk;document.getElementById('tradeOutcome').value=t.outcome;document.getElementById('tradePnL').value=t.pnl;setEmotion(t.emotion||3);if(t.rating)setRating(t.rating);document.getElementById('tradePreNotes').value=t.preNotes||'';document.getElementById('tradePostNotes').value=t.postNotes||'';document.getElementById('tradeLessons').value=t.lessons||'';if(t.mistakes)t.mistakes.split(',').forEach(function(m){var tag=document.querySelector('.mistake-tag[data-v="'+m+'"]');if(tag)tag.classList.add('selected')});document.getElementById('tradeMistakes').value=t.mistakes||'';var preview=document.getElementById('imgPreview');preview.dataset.local='';if(t.screenshot){preview.src=t.screenshot;preview.style.display='block'}else{preview.src='';preview.style.display='none'}calculateRR();calculateZoneScore();togglePnL();showTab('entry')}
 function deleteTrade(id){if(confirm('Delete this trade?')){trades=trades.filter(function(t){return t.id!==id});saveTrades();updateAll();showToast('Deleted','error')}}
 
 function updateAnalytics(){var closed=getFilteredTrades().filter(function(t){return t.outcome!=='Open'});
@@ -865,7 +897,11 @@ function updateGallery(){var f=document.getElementById('galleryFilter').value;va
 function updateProgress(){var total=20,checked=document.querySelectorAll('#checklist input:checked').length;document.getElementById('checkCount').textContent=checked+'/'+total;document.getElementById('progressFill').style.width=(checked/total*100)+'%'}
 function resetChecklist(){document.querySelectorAll('#checklist input').forEach(function(c){c.checked=false});updateProgress();showToast('Reset!')}
 
-function openSettings(){document.getElementById('setLimit').value=settings.limit;document.getElementById('setRisk').value=settings.risk;document.getElementById('setAccount').value=settings.account;openModal('settingsModal')}
+function openSettings(){document.getElementById('setLimit').value=settings.limit;document.getElementById('setRisk').value=settings.risk;document.getElementById('setAccount').value=settings.account;document.getElementById('setCloudinaryEnabled').checked=cloudinaryConfig.enabled;document.getElementById('setCloudName').value=cloudinaryConfig.cloudName||'';document.getElementById('setUploadPreset').value=cloudinaryConfig.uploadPreset||'';document.getElementById('cloudinaryFields').style.display=cloudinaryConfig.enabled?'block':'none';openModal('settingsModal')}
+
+function toggleCloudinary(){var enabled=document.getElementById('setCloudinaryEnabled').checked;document.getElementById('cloudinaryFields').style.display=enabled?'block':'none'}
+
+function saveCloudinarySettings(){cloudinaryConfig.enabled=document.getElementById('setCloudinaryEnabled').checked;cloudinaryConfig.cloudName=document.getElementById('setCloudName').value.trim();cloudinaryConfig.uploadPreset=document.getElementById('setUploadPreset').value.trim();if(cloudinaryConfig.enabled&&(!cloudinaryConfig.cloudName||!cloudinaryConfig.uploadPreset)){showToast('Enter Cloud Name and Upload Preset','error');return}saveCloudinaryConfig();showToast(cloudinaryConfig.enabled?'Cloudinary enabled!':'Using Imgur')}
 function saveSettings(){settings.limit=parseFloat(document.getElementById('setLimit').value)||200;settings.risk=parseFloat(document.getElementById('setRisk').value)||50;settings.account=parseFloat(document.getElementById('setAccount').value)||10000;localStorage.setItem('sdSettings',JSON.stringify(settings));updateDailyLimit();showToast('Saved!')}
 function loadSettings(){var s=localStorage.getItem('sdSettings');if(s)settings=JSON.parse(s)}
 function clearAll(){if(confirm('Delete ALL trades?')&&confirm('Are you sure?')){trades=[];saveTrades();updateAll();closeModal('settingsModal');showToast('Cleared','error')}}
@@ -942,6 +978,102 @@ var pct=Math.round(total/maxScore*100);
 var disp=document.getElementById('zoneScoreDisplay');
 if(disp){disp.textContent=pct+'%';disp.style.color=pct>=70?'var(--green)':pct>=50?'var(--gold)':'var(--red)'}
 return pct}
+
+// ============================================
+// IMAGE UPLOAD - Imgur (default) or Cloudinary
+// ============================================
+var imgurClientId='c4a4a563c6b9ac6';
+
+var cloudinaryConfig=JSON.parse(localStorage.getItem('sdCloudinary'))||{
+cloudName:'',
+uploadPreset:'',
+enabled:false
+};
+
+function saveCloudinaryConfig(){
+localStorage.setItem('sdCloudinary',JSON.stringify(cloudinaryConfig));
+}
+
+function previewImg(){
+var f=document.getElementById('tradeScreenshot').files[0];
+if(!f)return;
+var preview=document.getElementById('imgPreview');
+var reader=new FileReader();
+reader.onload=function(e){
+preview.src=e.target.result;
+preview.style.display='block';
+preview.dataset.local='true';
+};
+reader.readAsDataURL(f)}
+
+function uploadImage(base64,callback){
+if(cloudinaryConfig.enabled&&cloudinaryConfig.cloudName&&cloudinaryConfig.uploadPreset){
+uploadToCloudinary(base64,callback);
+}else{
+uploadToImgur(base64,callback);
+}}
+
+function uploadToImgur(base64,callback){
+var base64Data=base64.split(',')[1];
+showToast('Uploading to Imgur...');
+fetch('https://api.imgur.com/3/image',{
+method:'POST',
+headers:{
+'Authorization':'Client-ID '+imgurClientId,
+'Content-Type':'application/json'
+},
+body:JSON.stringify({image:base64Data,type:'base64'})
+})
+.then(function(res){return res.json()})
+.then(function(data){
+if(data.success){
+callback(data.data.link);
+showToast('Image uploaded to Imgur!');
+}else{
+showToast('Imgur failed, saving locally','error');
+callback(base64);
+}
+})
+.catch(function(err){
+showToast('Imgur failed, saving locally','error');
+callback(base64);
+})}
+
+function uploadToCloudinary(base64,callback){
+showToast('Uploading to Cloudinary...');
+var formData=new FormData();
+formData.append('file',base64);
+formData.append('upload_preset',cloudinaryConfig.uploadPreset);
+fetch('https://api.cloudinary.com/v1_1/'+cloudinaryConfig.cloudName+'/image/upload',{
+method:'POST',
+body:formData
+})
+.then(function(res){return res.json()})
+.then(function(data){
+if(data.secure_url){
+callback(data.secure_url);
+showToast('Image uploaded to Cloudinary!');
+}else{
+showToast('Cloudinary failed, trying Imgur...','error');
+uploadToImgur(base64,callback);
+}
+})
+.catch(function(err){
+showToast('Cloudinary failed, trying Imgur...','error');
+uploadToImgur(base64,callback);
+})}
+
+function saveTradeWithImage(trade,callback){
+var preview=document.getElementById('imgPreview');
+if(preview.style.display==='block'&&preview.src&&preview.dataset.local==='true'){
+uploadToImgur(preview.src,function(url){
+trade.screenshot=url;
+callback(trade);
+});
+}else{
+trade.screenshot=preview.src||'';
+callback(trade);
+}}
 
 function saveCustomConfig(){localStorage.setItem('sdCustom',JSON.stringify(customConfig))}
 
