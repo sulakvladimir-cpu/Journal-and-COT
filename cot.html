@@ -134,27 +134,27 @@
     </div>
     
     <div id="currencies" class="section">
-      <div class="section-title">💱 Major Currency Pairs</div>
+      <div class="section-title">💱 Major Currency Pairs (Sorted by Strength)</div>
       <div class="grid" id="currency-grid"></div>
     </div>
     
     <div id="crosses" class="section">
-      <div class="section-title">🔄 Cross Pairs</div>
+      <div class="section-title">🔄 Cross Pairs (Sorted by Strength)</div>
       <div class="grid" id="crosses-grid"></div>
     </div>
     
     <div id="commodities" class="section">
-      <div class="section-title">🛢️ Commodities</div>
+      <div class="section-title">🛢️ Commodities (Sorted by Strength)</div>
       <div class="grid" id="commodities-grid"></div>
     </div>
     
     <div id="indices" class="section">
-      <div class="section-title">📈 Indices</div>
+      <div class="section-title">📈 Indices (Sorted by Strength)</div>
       <div class="grid" id="indices-grid"></div>
     </div>
     
     <div class="base-contracts">
-      <div class="section-title">📋 Raw Net Position Changes (Contracts)</div>
+      <div class="section-title">📋 Raw Net Position Changes - Sorted Most Bullish → Most Bearish</div>
       <div class="base-grid" id="base-grid"></div>
     </div>
     
@@ -168,7 +168,7 @@
     // CFTC API Endpoint - Futures Only
     const API_FUTURES_ONLY = 'https://publicreporting.cftc.gov/resource/6dca-aqww.json';
     
-    // Contract mappings - Added DXY (USD Index)
+    // Contract mappings - Using simple search terms from working script
     const CONTRACT_MAP = {
       DXY: { search: 'U.S. DOLLAR INDEX', exchange: 'ICE FUTURES U.S.' },
       EUR: { search: 'EURO FX', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
@@ -181,13 +181,13 @@
       XAU: { search: 'GOLD', exchange: 'COMMODITY EXCHANGE INC', exclude: 'MICRO' },
       XAG: { search: 'SILVER', exchange: 'COMMODITY EXCHANGE INC', exclude: 'MICRO' },
       WTI: { search: 'WTI-PHYSICAL', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
-      US500: { search: 'E-MINI S&P 500', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      US500: { search: 'E-MINI S&P 500', exchange: 'CHICAGO MERCANTILE EXCHANGE', exactMatch: 'E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE' },
       US100: { search: 'NASDAQ MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
       US30: { search: 'DJIA', exchange: 'CHICAGO BOARD OF TRADE' },
       US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
     };
 
-    // Data storage - Futures only (added DXY)
+    // Data storage
     let futuresData = {
       DXY: 0, EUR: 0, GBP: 0, JPY: 0, AUD: 0, CAD: 0, NZD: 0, CHF: 0,
       XAU: 0, XAG: 0, WTI: 0, US500: 0, US100: 0, US30: 0, US2000: 0,
@@ -243,7 +243,7 @@
     };
 
     function loadSavedData() {
-      const saved = localStorage.getItem('cot-dashboard-futures-only-v2');
+      const saved = localStorage.getItem('cot-dashboard-v3-fixed');
       if (saved) {
         const parsed = JSON.parse(saved);
         futuresData = parsed.futuresData || futuresData;
@@ -263,8 +263,16 @@
     }
 
     async function fetchContractData(apiUrl, id, config) {
+      // Build query - use exactMatch first if available
+      let whereClause;
+      if (config.exactMatch) {
+        whereClause = `market_and_exchange_names = '${config.exactMatch}'`;
+      } else {
+        whereClause = `market_and_exchange_names like '%${config.search}%' AND market_and_exchange_names like '%${config.exchange}%'`;
+      }
+      
       const query = new URLSearchParams({
-        '$where': `market_and_exchange_names like '%${config.search}%' AND market_and_exchange_names like '%${config.exchange}%'`,
+        '$where': whereClause,
         '$order': 'report_date_as_yyyy_mm_dd DESC',
         '$limit': '5'
       });
@@ -375,7 +383,7 @@
 
         reportDate = latestDate || reportDate;
         
-        localStorage.setItem('cot-dashboard-futures-only-v2', JSON.stringify({
+        localStorage.setItem('cot-dashboard-v3-fixed', JSON.stringify({
           futuresData, reportDate,
           fetchedAt: new Date().toISOString()
         }));
@@ -396,7 +404,7 @@
     }
 
     function clearCache() {
-      localStorage.removeItem('cot-dashboard-futures-only-v2');
+      localStorage.removeItem('cot-dashboard-v3-fixed');
       location.reload();
     }
 
@@ -404,7 +412,6 @@
       const baseVal = futuresData[pair.base] || 0;
       const quoteVal = pair.quote ? (futuresData[pair.quote] || 0) : 0;
       
-      // DXY and other standalone contracts
       if (!pair.quote) return baseVal;
       if (pair.quote === 'USD') return baseVal;
       if (pair.base === 'USD') return -quoteVal;
@@ -444,8 +451,7 @@
       `;
     }
 
-    function createBaseCard(id) {
-      const value = futuresData[id] || 0;
+    function createBaseCard(id, value) {
       const names = {
         DXY: 'USD Index', EUR: 'Euro', GBP: 'Pound', JPY: 'Yen', AUD: 'Aussie', CAD: 'Loonie',
         NZD: 'Kiwi', CHF: 'Franc', XAU: 'Gold', XAG: 'Silver', WTI: 'Oil',
@@ -460,13 +466,38 @@
       `;
     }
 
+    // Sort pairs by calculated value (most positive to most negative)
+    function sortPairsByValue(pairsArray) {
+      return [...pairsArray].sort((a, b) => {
+        const valA = calculatePairValue(a);
+        const valB = calculatePairValue(b);
+        return valB - valA; // Descending order (most positive first)
+      });
+    }
+
+    // Sort base contracts by value
+    function getSortedBaseContracts() {
+      return Object.entries(futuresData)
+        .sort((a, b) => b[1] - a[1]) // Sort by value descending
+        .map(([id, value]) => ({ id, value }));
+    }
+
     function updateUI() {
       document.getElementById('report-date').textContent = `Report Date: ${reportDate || 'Not loaded'}`;
-      document.getElementById('currency-grid').innerHTML = pairs.currencies.map(createCard).join('');
-      document.getElementById('crosses-grid').innerHTML = pairs.crosses.map(createCard).join('');
-      document.getElementById('commodities-grid').innerHTML = pairs.commodities.map(createCard).join('');
-      document.getElementById('indices-grid').innerHTML = pairs.indices.map(createCard).join('');
-      document.getElementById('base-grid').innerHTML = Object.keys(futuresData).map(createBaseCard).join('');
+      
+      // Sort and render each section
+      document.getElementById('currency-grid').innerHTML = 
+        sortPairsByValue(pairs.currencies).map(createCard).join('');
+      document.getElementById('crosses-grid').innerHTML = 
+        sortPairsByValue(pairs.crosses).map(createCard).join('');
+      document.getElementById('commodities-grid').innerHTML = 
+        sortPairsByValue(pairs.commodities).map(createCard).join('');
+      document.getElementById('indices-grid').innerHTML = 
+        sortPairsByValue(pairs.indices).map(createCard).join('');
+      
+      // Sort base contracts from most positive to most negative
+      document.getElementById('base-grid').innerHTML = 
+        getSortedBaseContracts().map(({ id, value }) => createBaseCard(id, value)).join('');
     }
 
     function showSection(section, element) {
