@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COT Dashboard - Futures Only</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh; color: #e4e4e7; padding: 20px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 30px; }
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; 
+         background: linear-gradient(90deg, #60a5fa, #a78bfa); 
+         -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { color: #9ca3af; font-size: 0.9rem; }
+    .report-date { background: #374151; padding: 8px 16px; border-radius: 8px; 
+                   display: inline-block; margin-top: 10px; font-weight: 600; color: #fbbf24; }
+    
+    .controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+    .btn { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; 
+           font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-primary:disabled { background: #4b5563; cursor: not-allowed; }
+    .btn-secondary { background: #374151; color: #e4e4e7; border: 1px solid #4b5563; }
+    .btn-secondary:hover { background: #4b5563; }
+    
+    .status { text-align: center; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; }
+    .status.loading { background: rgba(251, 191, 36, 0.1); color: #fbbf24; }
+    .status.success { background: rgba(34, 197, 94, 0.1); color: #4ade80; }
+    .status.error { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+    .status.hidden { display: none; }
+    
+    .section { margin-bottom: 30px; }
+    .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; 
+                     color: #9ca3af; border-bottom: 1px solid #374151; padding-bottom: 8px; }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+    
+    .card { background: rgba(55, 65, 81, 0.5); border-radius: 12px; padding: 16px;
+            border: 1px solid #4b5563; transition: all 0.2s; }
+    .card:hover { border-color: #6b7280; transform: translateY(-2px); }
+    
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .pair-name { font-weight: 700; font-size: 1.1rem; }
+    .sentiment { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .bullish { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .bearish { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .neutral { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
+    
+    .value-box { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; margin-top: 10px; }
+    .value-label { font-size: 0.7rem; color: #9ca3af; margin-bottom: 4px; text-transform: uppercase; }
+    .value-number { font-size: 1.1rem; font-weight: 700; }
+    .value-number.positive { color: #4ade80; }
+    .value-number.negative { color: #f87171; }
+    
+    .bar-container { height: 6px; background: #4b5563; border-radius: 3px; overflow: hidden; margin-top: 6px; }
+    .bar { height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .bar.positive { background: linear-gradient(90deg, #22c55e, #4ade80); }
+    .bar.negative { background: linear-gradient(90deg, #f87171, #ef4444); }
+    
+    .base-contracts { margin-top: 40px; padding-top: 20px; border-top: 1px solid #374151; }
+    .base-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .base-card { background: rgba(55, 65, 81, 0.3); padding: 12px; border-radius: 8px; text-align: center; }
+    .base-id { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+    .base-value { font-size: 0.9rem; font-weight: 600; }
+    .base-value.positive { color: #4ade80; }
+    .base-value.negative { color: #f87171; }
+    
+    .footer { text-align: center; margin-top: 40px; padding-top: 20px; 
+              border-top: 1px solid #374151; color: #6b7280; font-size: 0.8rem; }
+    
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+    .tab { padding: 8px 16px; border-radius: 8px; cursor: pointer; background: #374151; 
+           border: 1px solid #4b5563; transition: all 0.2s; }
+    .tab:hover { background: #4b5563; }
+    .tab.active { background: #3b82f6; border-color: #3b82f6; }
+    
+    .hidden { display: none; }
+    
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #4b5563;
+               border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .last-updated { font-size: 0.8rem; color: #6b7280; margin-top: 10px; }
+    
+    .info-box { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; 
+                border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center; }
+    .info-box p { color: #93c5fd; font-size: 0.85rem; }
+    
+    .nav-link { color: #60a5fa; text-decoration: none; margin-left: 15px; }
+    .nav-link:hover { text-decoration: underline; }
+    
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📊 COT Weekly Bias Dashboard</h1>
+      <p class="subtitle">CFTC Commitment of Traders - Non-Commercial Net Position Changes (Futures Only)</p>
+      <div class="report-date" id="report-date">Loading...</div>
+      <div class="last-updated" id="last-updated"></div>
+    </header>
+    
+    <div class="info-box">
+      <p>🆓 <strong>No API key required!</strong> Data fetched directly from official CFTC Public Reporting API
+        <a href="journal.html" class="nav-link">📝 Open Trading Journal</a>
+      </p>
+    </div>
+    
+    <div class="controls">
+      <button class="btn btn-primary" id="fetch-btn" onclick="fetchAllData()">
+        <span id="fetch-btn-text">🔄 Fetch Latest Data</span>
+      </button>
+      <button class="btn btn-secondary" onclick="clearCache()">🗑️ Clear Cache</button>
+    </div>
+    
+    <div id="status" class="status hidden"></div>
+    
+    <div class="tabs">
+      <div class="tab active" onclick="showSection('all', this)">All</div>
+      <div class="tab" onclick="showSection('currencies', this)">Currencies</div>
+      <div class="tab" onclick="showSection('crosses', this)">Crosses</div>
+      <div class="tab" onclick="showSection('commodities', this)">Commodities</div>
+      <div class="tab" onclick="showSection('indices', this)">Indices</div>
+    </div>
+    
+    <div id="currencies" class="section">
+      <div class="section-title">💱 Major Currency Pairs</div>
+      <div class="grid" id="currency-grid"></div>
+    </div>
+    
+    <div id="crosses" class="section">
+      <div class="section-title">🔄 Cross Pairs</div>
+      <div class="grid" id="crosses-grid"></div>
+    </div>
+    
+    <div id="commodities" class="section">
+      <div class="section-title">🛢️ Commodities</div>
+      <div class="grid" id="commodities-grid"></div>
+    </div>
+    
+    <div id="indices" class="section">
+      <div class="section-title">📈 Indices</div>
+      <div class="grid" id="indices-grid"></div>
+    </div>
+    
+    <div class="base-contracts">
+      <div class="section-title">📋 Raw Net Position Changes (Contracts)</div>
+      <div class="base-grid" id="base-grid"></div>
+    </div>
+    
+    <footer class="footer">
+      <p>Data Source: <a href="https://publicreporting.cftc.gov" target="_blank" style="color: #60a5fa;">CFTC Public Reporting API</a> - Futures Only (6dca-aqww)</p>
+      <p style="margin-top: 5px;">Net Change = Non-Commercial Long Change − Short Change | New data every Friday ~3:30 PM ET</p>
+    </footer>
+  </div>
+
+  <script>
+    // CFTC API Endpoint - Futures Only
+    const API_FUTURES_ONLY = 'https://publicreporting.cftc.gov/resource/6dca-aqww.json';
+    
+    // Contract mappings - Added DXY (USD Index)
+    const CONTRACT_MAP = {
+      DXY: { search: 'U.S. DOLLAR INDEX', exchange: 'ICE FUTURES U.S.' },
+      EUR: { search: 'EURO FX', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      GBP: { search: 'BRITISH POUND', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      JPY: { search: 'JAPANESE YEN', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      AUD: { search: 'AUSTRALIAN DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      CAD: { search: 'CANADIAN DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      NZD: { search: 'NZ DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      CHF: { search: 'SWISS FRANC', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      XAU: { search: 'GOLD', exchange: 'COMMODITY EXCHANGE INC', exclude: 'MICRO' },
+      XAG: { search: 'SILVER', exchange: 'COMMODITY EXCHANGE INC', exclude: 'MICRO' },
+      WTI: { search: 'WTI-PHYSICAL', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
+      US500: { search: 'E-MINI S&P 500', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      US100: { search: 'NASDAQ MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      US30: { search: 'DJIA', exchange: 'CHICAGO BOARD OF TRADE' },
+      US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+    };
+
+    // Data storage - Futures only (added DXY)
+    let futuresData = {
+      DXY: 0, EUR: 0, GBP: 0, JPY: 0, AUD: 0, CAD: 0, NZD: 0, CHF: 0,
+      XAU: 0, XAG: 0, WTI: 0, US500: 0, US100: 0, US30: 0, US2000: 0,
+    };
+    
+    let reportDate = '';
+
+    const pairs = {
+      currencies: [
+        { pair: 'DXY', base: 'DXY', quote: null },
+        { pair: 'EUR/USD', base: 'EUR', quote: 'USD' },
+        { pair: 'GBP/USD', base: 'GBP', quote: 'USD' },
+        { pair: 'AUD/USD', base: 'AUD', quote: 'USD' },
+        { pair: 'NZD/USD', base: 'NZD', quote: 'USD' },
+        { pair: 'USD/JPY', base: 'USD', quote: 'JPY' },
+        { pair: 'USD/CAD', base: 'USD', quote: 'CAD' },
+        { pair: 'USD/CHF', base: 'USD', quote: 'CHF' },
+      ],
+      crosses: [
+        { pair: 'EUR/GBP', base: 'EUR', quote: 'GBP' },
+        { pair: 'EUR/JPY', base: 'EUR', quote: 'JPY' },
+        { pair: 'EUR/AUD', base: 'EUR', quote: 'AUD' },
+        { pair: 'EUR/CAD', base: 'EUR', quote: 'CAD' },
+        { pair: 'EUR/NZD', base: 'EUR', quote: 'NZD' },
+        { pair: 'EUR/CHF', base: 'EUR', quote: 'CHF' },
+        { pair: 'GBP/JPY', base: 'GBP', quote: 'JPY' },
+        { pair: 'GBP/AUD', base: 'GBP', quote: 'AUD' },
+        { pair: 'GBP/CAD', base: 'GBP', quote: 'CAD' },
+        { pair: 'GBP/NZD', base: 'GBP', quote: 'NZD' },
+        { pair: 'GBP/CHF', base: 'GBP', quote: 'CHF' },
+        { pair: 'AUD/JPY', base: 'AUD', quote: 'JPY' },
+        { pair: 'AUD/CAD', base: 'AUD', quote: 'CAD' },
+        { pair: 'AUD/NZD', base: 'AUD', quote: 'NZD' },
+        { pair: 'AUD/CHF', base: 'AUD', quote: 'CHF' },
+        { pair: 'NZD/JPY', base: 'NZD', quote: 'JPY' },
+        { pair: 'NZD/CAD', base: 'NZD', quote: 'CAD' },
+        { pair: 'NZD/CHF', base: 'NZD', quote: 'CHF' },
+        { pair: 'CAD/JPY', base: 'CAD', quote: 'JPY' },
+        { pair: 'CAD/CHF', base: 'CAD', quote: 'CHF' },
+        { pair: 'CHF/JPY', base: 'CHF', quote: 'JPY' },
+      ],
+      commodities: [
+        { pair: 'XAU/USD', base: 'XAU', quote: 'USD' },
+        { pair: 'XAG/USD', base: 'XAG', quote: 'USD' },
+        { pair: 'WTI', base: 'WTI', quote: null },
+      ],
+      indices: [
+        { pair: 'US500', base: 'US500', quote: null },
+        { pair: 'US100', base: 'US100', quote: null },
+        { pair: 'US30', base: 'US30', quote: null },
+        { pair: 'US2000', base: 'US2000', quote: null },
+      ]
+    };
+
+    function loadSavedData() {
+      const saved = localStorage.getItem('cot-dashboard-futures-only-v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        futuresData = parsed.futuresData || futuresData;
+        reportDate = parsed.reportDate || reportDate;
+        if (parsed.fetchedAt) {
+          document.getElementById('last-updated').textContent = 
+            `Last fetched: ${new Date(parsed.fetchedAt).toLocaleString()}`;
+        }
+      }
+      updateUI();
+    }
+
+    function showStatus(message, type) {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = `status ${type}`;
+    }
+
+    async function fetchContractData(apiUrl, id, config) {
+      const query = new URLSearchParams({
+        '$where': `market_and_exchange_names like '%${config.search}%' AND market_and_exchange_names like '%${config.exchange}%'`,
+        '$order': 'report_date_as_yyyy_mm_dd DESC',
+        '$limit': '5'
+      });
+      
+      const url = `${apiUrl}?${query}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      let data = await response.json();
+      
+      if (config.exclude) {
+        data = data.filter(d => !d.market_and_exchange_names.includes(config.exclude));
+      }
+      
+      if (data.length < 2) {
+        console.warn(`${id}: Not enough data points`);
+        return null;
+      }
+      
+      const latest = data[0];
+      const previous = data[1];
+      
+      // Try to get change fields first
+      let longChange = parseInt(
+        latest.change_in_noncomm_long_all || 
+        latest.Change_in_NonComm_Long_All ||
+        0
+      );
+      let shortChange = parseInt(
+        latest.change_in_noncomm_short_all || 
+        latest.Change_in_NonComm_Short_All ||
+        0
+      );
+      
+      // If change fields are 0 or missing, calculate from positions
+      if (longChange === 0 && shortChange === 0) {
+        const currentLong = parseInt(
+          latest.noncomm_positions_long_all || 
+          latest.NonComm_Positions_Long_All ||
+          latest.ncomm_positions_long_all ||
+          0
+        );
+        const currentShort = parseInt(
+          latest.noncomm_positions_short_all || 
+          latest.NonComm_Positions_Short_All ||
+          latest.ncomm_positions_short_all ||
+          0
+        );
+        const prevLong = parseInt(
+          previous.noncomm_positions_long_all || 
+          previous.NonComm_Positions_Long_All ||
+          previous.ncomm_positions_long_all ||
+          0
+        );
+        const prevShort = parseInt(
+          previous.noncomm_positions_short_all || 
+          previous.NonComm_Positions_Short_All ||
+          previous.ncomm_positions_short_all ||
+          0
+        );
+        
+        longChange = currentLong - prevLong;
+        shortChange = currentShort - prevShort;
+        
+        console.log(`${id} (calculated from positions):`, {
+          currentLong, prevLong, longChange,
+          currentShort, prevShort, shortChange,
+          net: longChange - shortChange
+        });
+      } else {
+        console.log(`${id} (from change fields):`, {
+          longChange, shortChange, net: longChange - shortChange
+        });
+      }
+      
+      return {
+        netChange: longChange - shortChange,
+        reportDate: latest.report_date_as_yyyy_mm_dd || latest.Report_Date_as_YYYY_MM_DD
+      };
+    }
+
+    async function fetchAllData() {
+      const btn = document.getElementById('fetch-btn');
+      const btnText = document.getElementById('fetch-btn-text');
+      btn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span> Fetching...';
+      showStatus('Fetching data from CFTC API (Futures Only)...', 'loading');
+
+      let latestDate = '';
+      let successCount = 0;
+      let errorCount = 0;
+
+      try {
+        const promises = Object.entries(CONTRACT_MAP).map(([id, config]) =>
+          fetchContractData(API_FUTURES_ONLY, id, config)
+            .then(result => {
+              if (result) {
+                futuresData[id] = result.netChange;
+                if (result.reportDate > latestDate) latestDate = result.reportDate;
+                successCount++;
+              }
+            })
+            .catch(err => { console.error(`Futures ${id}:`, err); errorCount++; })
+        );
+
+        await Promise.all(promises);
+
+        reportDate = latestDate || reportDate;
+        
+        localStorage.setItem('cot-dashboard-futures-only-v2', JSON.stringify({
+          futuresData, reportDate,
+          fetchedAt: new Date().toISOString()
+        }));
+
+        document.getElementById('last-updated').textContent = 
+          `Last fetched: ${new Date().toLocaleString()}`;
+
+        updateUI();
+        showStatus(`Successfully updated! (${successCount} fetches, ${errorCount} errors)`, 'success');
+
+      } catch (error) {
+        console.error('Fetch error:', error);
+        showStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = '🔄 Fetch Latest Data';
+      }
+    }
+
+    function clearCache() {
+      localStorage.removeItem('cot-dashboard-futures-only-v2');
+      location.reload();
+    }
+
+    function calculatePairValue(pair) {
+      const baseVal = futuresData[pair.base] || 0;
+      const quoteVal = pair.quote ? (futuresData[pair.quote] || 0) : 0;
+      
+      // DXY and other standalone contracts
+      if (!pair.quote) return baseVal;
+      if (pair.quote === 'USD') return baseVal;
+      if (pair.base === 'USD') return -quoteVal;
+      return baseVal - quoteVal;
+    }
+
+    function getSentimentLabel(value) {
+      if (value > 5000) return { label: 'Bullish', class: 'bullish' };
+      if (value < -5000) return { label: 'Bearish', class: 'bearish' };
+      return { label: 'Neutral', class: 'neutral' };
+    }
+
+    function formatNumber(num) {
+      return new Intl.NumberFormat('en-US', { signDisplay: 'always' }).format(num);
+    }
+
+    function createCard(pair) {
+      const value = calculatePairValue(pair);
+      const sentiment = getSentimentLabel(value);
+      const maxVal = 50000;
+      const barWidth = Math.min(Math.abs(value) / maxVal * 100, 100);
+      
+      return `
+        <div class="card">
+          <div class="card-header">
+            <span class="pair-name">${pair.pair}</span>
+            <span class="sentiment ${sentiment.class}">${sentiment.label}</span>
+          </div>
+          <div class="value-box">
+            <div class="value-label">📊 Net Change</div>
+            <div class="value-number ${value >= 0 ? 'positive' : 'negative'}">${formatNumber(value)}</div>
+            <div class="bar-container">
+              <div class="bar ${value >= 0 ? 'positive' : 'negative'}" style="width: ${barWidth}%"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function createBaseCard(id) {
+      const value = futuresData[id] || 0;
+      const names = {
+        DXY: 'USD Index', EUR: 'Euro', GBP: 'Pound', JPY: 'Yen', AUD: 'Aussie', CAD: 'Loonie',
+        NZD: 'Kiwi', CHF: 'Franc', XAU: 'Gold', XAG: 'Silver', WTI: 'Oil',
+        US500: 'S&P 500', US100: 'Nasdaq', US30: 'Dow', US2000: 'Russell'
+      };
+      return `
+        <div class="base-card">
+          <div class="base-id">${id}</div>
+          <div class="base-value ${value >= 0 ? 'positive' : 'negative'}">${formatNumber(value)}</div>
+          <div style="font-size: 0.7rem; color: #6b7280; margin-top: 4px;">${names[id] || ''}</div>
+        </div>
+      `;
+    }
+
+    function updateUI() {
+      document.getElementById('report-date').textContent = `Report Date: ${reportDate || 'Not loaded'}`;
+      document.getElementById('currency-grid').innerHTML = pairs.currencies.map(createCard).join('');
+      document.getElementById('crosses-grid').innerHTML = pairs.crosses.map(createCard).join('');
+      document.getElementById('commodities-grid').innerHTML = pairs.commodities.map(createCard).join('');
+      document.getElementById('indices-grid').innerHTML = pairs.indices.map(createCard).join('');
+      document.getElementById('base-grid').innerHTML = Object.keys(futuresData).map(createBaseCard).join('');
+    }
+
+    function showSection(section, element) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      element.classList.add('active');
+      
+      const sections = ['currencies', 'crosses', 'commodities', 'indices'];
+      sections.forEach(s => {
+        document.getElementById(s).classList.toggle('hidden', section !== 'all' && section !== s);
+      });
+    }
+
+    // Initialize
+    loadSavedData();
+  </script>
+</body>
+</html>

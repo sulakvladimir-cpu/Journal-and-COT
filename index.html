@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Tools by Vladimir</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #000;
+      min-height: 100vh; 
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+    
+    .container { max-width: 900px; width: 100%; }
+    
+    header { text-align: center; margin-bottom: 60px; }
+    
+    h1 { 
+      font-size: 3rem; 
+      font-weight: 700; 
+      margin-bottom: 15px;
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      -webkit-background-clip: text; 
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .subtitle { color: #888; font-size: 1.1rem; }
+    
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 25px;
+    }
+    
+    .tool-card {
+      background: linear-gradient(135deg, #0a0a0a, #141414);
+      border: 1px solid #2a2a2a;
+      border-radius: 20px;
+      padding: 35px;
+      transition: all 0.3s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    
+    .tool-card:hover {
+      border-color: #FFD700;
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(255, 215, 0, 0.1);
+    }
+    
+    .tool-icon {
+      font-size: 3.5rem;
+      margin-bottom: 20px;
+    }
+    
+    .tool-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #FFD700;
+    }
+    
+    .tool-description {
+      color: #888;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    
+    .tool-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .feature-tag {
+      padding: 6px 12px;
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      color: #FFD700;
+    }
+    
+    .cta-text {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #FFD700;
+      font-weight: 600;
+      margin-top: 25px;
+    }
+    
+    .cta-text span {
+      transition: transform 0.2s;
+    }
+    
+    .tool-card:hover .cta-text span {
+      transform: translateX(5px);
+    }
+    
+    footer {
+      margin-top: 60px;
+      text-align: center;
+      color: #444;
+      font-size: 0.85rem;
+    }
+    
+    footer a {
+      color: #FFD700;
+      text-decoration: none;
+    }
+    
+    footer a:hover {
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+      h1 { font-size: 2rem; }
+      .tools-grid { grid-template-columns: 1fr; }
+      .tool-card { padding: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ Trading Tools</h1>
+      <p class="subtitle">Professional tools for Supply & Demand traders</p>
+    </header>
+    
+    <div class="tools-grid">
+      <a href="cot.html" class="tool-card">
+        <div class="tool-icon">📊</div>
+        <h2 class="tool-name">COT Weekly Bias Dashboard</h2>
+        <p class="tool-description">
+          Track institutional positioning with real-time CFTC Commitment of Traders data. 
+          Automatically fetches Futures Only net position changes for all major currencies, 
+          commodities, and indices.
+        </p>
+        <div class="tool-features">
+          <span class="feature-tag">Auto-Fetch CFTC API</span>
+          <span class="feature-tag">15 Contracts</span>
+          <span class="feature-tag">Cross Pairs</span>
+          <span class="feature-tag">USD Index</span>
+          <span class="feature-tag">No API Key</span>
+        </div>
+        <div class="cta-text">
+          Open Dashboard <span>→</span>
+        </div>
+      </a>
+      
+      <a href="journal.html" class="tool-card">
+        <div class="tool-icon">📝</div>
+        <h2 class="tool-name">S&D Trading Journal Pro</h2>
+        <p class="tool-description">
+          Complete trading journal built for Supply & Demand analysis. Track trades, 
+          manage multiple accounts, analyze performance with charts, and improve your 
+          trading with detailed statistics.
+        </p>
+        <div class="tool-features">
+          <span class="feature-tag">Multi-Account</span>
+          <span class="feature-tag">Zone Quality Scoring</span>
+          <span class="feature-tag">Performance Charts</span>
+          <span class="feature-tag">Screenshot Gallery</span>
+          <span class="feature-tag">Local Storage</span>
+        </div>
+        <div class="cta-text">
+          Open Journal <span>→</span>
+        </div>
+      </a>
+    </div>
+    
+    <footer>
+      <p>Built with ❤️ for traders | 
+        <a href="https://github.com/YOUR_USERNAME/trading-tools" target="_blank">GitHub</a>
+      </p>
+      <p style="margin-top: 10px;">Data: CFTC Public Reporting API | All data stored locally in your browser</p>
+    </footer>
+  </div>
+</body>
+</html>
