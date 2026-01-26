@@ -332,9 +332,25 @@ tr:hover{background:rgba(255,255,255,.02)}
 <div class="card-header"><h3>📋 My Trading Strategies</h3><button class="btn btn-primary" onclick="openStrategyEditor()">+ New Strategy</button></div>
 <div class="card-body"><div id="strategiesList" class="strategies-grid"></div></div>
 </div>
-<div class="card">
-<div class="card-header"><h3>📊 Strategy Performance</h3></div>
+<div class="card" style="margin-bottom:20px">
+<div class="card-header"><h3>📊 Strategy Performance (Live Trades)</h3></div>
 <div class="card-body"><div id="strategyPerformance"></div></div>
+</div>
+<div class="card" style="margin-bottom:20px">
+<div class="card-header"><h3>🧪 Strategy Backtester</h3><button class="btn btn-primary" onclick="openBacktestModal()">+ Add Backtest</button></div>
+<div class="card-body">
+<p style="color:var(--text2);margin-bottom:15px;font-size:.9rem">Log backtested trades to track strategy win rates before going live.</p>
+<div id="backtestStats" class="stats-grid" style="margin-bottom:20px"></div>
+<div style="overflow-x:auto"><table><thead><tr><th>Strategy</th><th>Date</th><th>Pair</th><th>Direction</th><th>Result</th><th>R:R</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="backtestTable"></tbody></table></div>
+</div>
+</div>
+<div class="card">
+<div class="card-header"><h3>🚫 Trades Not Taken</h3><button class="btn btn-primary" onclick="openMissedTradeModal()">+ Add Missed Trade</button></div>
+<div class="card-body">
+<p style="color:var(--text2);margin-bottom:15px;font-size:.9rem">Track setups you identified but didn't take. See what you're missing!</p>
+<div id="missedStats" class="stats-grid" style="margin-bottom:20px"></div>
+<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Pair</th><th>Direction</th><th>Zone</th><th>Would Have Won?</th><th>Reason Not Taken</th><th>Screenshot</th><th>Actions</th></tr></thead><tbody id="missedTable"></tbody></table></div>
+</div>
 </div>
 </div>
 
@@ -514,6 +530,7 @@ tr:hover{background:rgba(255,255,255,.02)}
 <input type="hidden" id="editStrategyId">
 <div class="form-group" style="margin-bottom:15px"><label>Strategy Name</label><input type="text" id="strategyName" placeholder="e.g. Fresh Zone Reversal, Liquidity Grab, BOS Continuation..." style="width:100%;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
 <div class="form-group" style="margin-bottom:15px"><label>Description</label><textarea id="strategyDesc" placeholder="Brief description of when to use this strategy..." style="width:100%;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);min-height:60px"></textarea></div>
+<div class="form-group" style="margin-bottom:15px"><label>📸 Strategy Screenshot (example setup)</label><input type="file" id="strategyScreenshot" accept="image/*" onchange="previewStrategyImg()"><img id="strategyImgPreview" style="max-width:100%;max-height:200px;border-radius:8px;margin-top:10px;display:none"></div>
 <div class="form-group" style="margin-bottom:15px"><label>Entry Rules (one per line)</label><textarea id="strategyEntryRules" placeholder="1. Wait for price to reach fresh S&D zone&#10;2. Look for rejection candle on M15&#10;3. Enter on break of rejection candle high/low&#10;4. Minimum 1:2 R:R" style="width:100%;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);min-height:120px;font-family:monospace"></textarea></div>
 <div class="form-group" style="margin-bottom:15px"><label>Exit Rules (one per line)</label><textarea id="strategyExitRules" placeholder="1. TP at opposing zone&#10;2. Move SL to BE after 1R&#10;3. Trail stop after 2R" style="width:100%;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);min-height:80px;font-family:monospace"></textarea></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px">
@@ -524,12 +541,46 @@ tr:hover{background:rgba(255,255,255,.02)}
 <div class="form-group" style="margin-bottom:20px"><label>Strategy Color</label><input type="color" id="strategyColor" value="#FFD700" style="width:60px;height:40px;border:none;border-radius:8px;cursor:pointer"></div>
 <div style="display:flex;gap:10px"><button class="btn btn-primary" onclick="saveStrategy()">💾 Save Strategy</button><button class="btn btn-secondary" onclick="closeModal('strategyModal')">Cancel</button></div>
 </div></div></div>
+
+<div class="modal" id="backtestModal"><div class="modal-content" style="max-width:600px"><div class="modal-header"><h3>🧪 Add Backtest Trade</h3><button class="modal-close" onclick="closeModal('backtestModal')">×</button></div><div class="modal-body">
+<input type="hidden" id="editBacktestId">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+<div class="form-group"><label>Strategy</label><select id="backtestStrategy" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></select></div>
+<div class="form-group"><label>Date</label><input type="date" id="backtestDate" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+<div class="form-group"><label>Pair</label><input type="text" id="backtestPair" placeholder="EURUSD" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+<div class="form-group"><label>Direction</label><select id="backtestDirection" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option>Long</option><option>Short</option></select></div>
+<div class="form-group"><label>Result</label><select id="backtestResult" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option>Win</option><option>Loss</option><option>BE</option></select></div>
+<div class="form-group"><label>R:R Achieved</label><input type="number" id="backtestRR" step="0.1" placeholder="2.5" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+</div>
+<div class="form-group" style="margin-top:15px"><label>Notes</label><textarea id="backtestNotes" placeholder="What made this setup good/bad..." style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);min-height:60px"></textarea></div>
+<div class="form-group" style="margin-top:15px"><label>Screenshot</label><input type="file" id="backtestScreenshot" accept="image/*" onchange="previewBacktestImg()"><img id="backtestImgPreview" style="max-width:100%;max-height:150px;border-radius:8px;margin-top:10px;display:none"></div>
+<div style="display:flex;gap:10px;margin-top:20px"><button class="btn btn-primary" onclick="saveBacktest()">💾 Save Backtest</button><button class="btn btn-secondary" onclick="closeModal('backtestModal')">Cancel</button></div>
+</div></div></div>
+
+<div class="modal" id="missedTradeModal"><div class="modal-content" style="max-width:600px"><div class="modal-header"><h3>🚫 Add Missed Trade</h3><button class="modal-close" onclick="closeModal('missedTradeModal')">×</button></div><div class="modal-body">
+<input type="hidden" id="editMissedId">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+<div class="form-group"><label>Date</label><input type="date" id="missedDate" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+<div class="form-group"><label>Pair</label><input type="text" id="missedPair" placeholder="EURUSD" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+<div class="form-group"><label>Direction</label><select id="missedDirection" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option>Long</option><option>Short</option></select></div>
+<div class="form-group"><label>Zone</label><select id="missedZone" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option>Demand</option><option>Supply</option></select></div>
+<div class="form-group"><label>Would Have Won?</label><select id="missedResult" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option value="Win">✅ Yes - Win</option><option value="Loss">❌ No - Loss</option><option value="BE">➖ Break Even</option><option value="Unknown">❓ Unknown</option></select></div>
+<div class="form-group"><label>Potential R:R</label><input type="number" id="missedRR" step="0.1" placeholder="2.5" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+</div>
+<div class="form-group" style="margin-top:15px"><label>Reason Not Taken</label><select id="missedReason" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option>Not at screen</option><option>Hesitation/Fear</option><option>Waiting for better entry</option><option>Already in trade</option><option>Hit daily limit</option><option>News event</option><option>Didn't trust setup</option><option>Forgot to set alert</option><option>Other</option></select></div>
+<div class="form-group" style="margin-top:15px"><label>Notes</label><textarea id="missedNotes" placeholder="What you learned..." style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);min-height:60px"></textarea></div>
+<div class="form-group" style="margin-top:15px"><label>Screenshot</label><input type="file" id="missedScreenshot" accept="image/*" onchange="previewMissedImg()"><img id="missedImgPreview" style="max-width:100%;max-height:150px;border-radius:8px;margin-top:10px;display:none"></div>
+<div style="display:flex;gap:10px;margin-top:20px"><button class="btn btn-primary" onclick="saveMissedTrade()">💾 Save Missed Trade</button><button class="btn btn-secondary" onclick="closeModal('missedTradeModal')">Cancel</button></div>
+</div></div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 let trades=JSON.parse(localStorage.getItem('sdPro'))||[];
 let accounts=JSON.parse(localStorage.getItem('sdAccounts'))||[{id:'default',name:'Main Account',color:'#FFD700'}];
 let strategies=JSON.parse(localStorage.getItem('sdStrategies'))||[];
+let backtests=JSON.parse(localStorage.getItem('sdBacktests'))||[];
+let missedTrades=JSON.parse(localStorage.getItem('sdMissed'))||[];
 var defaultCustomConfig={
 sessions:['Asian','London','New York','Overlap'],
 timeframes:['M1','M3','M5','M15','M30','H1','H2','H4','H8','D1','W1','MN'],
@@ -646,17 +697,34 @@ document.getElementById('strategyTimeframes').value=s.timeframes||'';
 document.getElementById('strategySessions').value=s.sessions||'';
 document.getElementById('strategyRisk').value=s.riskNotes||'';
 document.getElementById('strategyColor').value=s.color||'#FFD700';
+var stratPreview=document.getElementById('strategyImgPreview');
+if(s.screenshot){stratPreview.src=s.screenshot;stratPreview.style.display='block'}else{stratPreview.src='';stratPreview.style.display='none'}
+stratPreview.dataset.local='';
 document.getElementById('strategyModalTitle').textContent='📋 Edit Strategy';
 }}
 openModal('strategyModal')}
+
+function previewStrategyImg(){
+var f=document.getElementById('strategyScreenshot').files[0];
+if(!f)return;
+var preview=document.getElementById('strategyImgPreview');
+var reader=new FileReader();
+reader.onload=function(e){preview.src=e.target.result;preview.style.display='block';preview.dataset.local='true'};
+reader.readAsDataURL(f)}
+
 function saveStrategy(){
 var name=document.getElementById('strategyName').value.trim();
 if(!name){showToast('Enter strategy name','error');return}
 var id=document.getElementById('editStrategyId').value||'strat_'+Date.now();
+var preview=document.getElementById('strategyImgPreview');
+var hasNewImg=preview.style.display==='block'&&preview.src&&preview.dataset.local==='true';
+var existingStrat=strategies.find(function(s){return s.id===id});
+var doSave=function(imgUrl){
 var strategy={
 id:id,
 name:name,
 description:document.getElementById('strategyDesc').value,
+screenshot:imgUrl,
 entryRules:document.getElementById('strategyEntryRules').value.split('\n').filter(function(r){return r.trim()}),
 exitRules:document.getElementById('strategyExitRules').value.split('\n').filter(function(r){return r.trim()}),
 timeframes:document.getElementById('strategyTimeframes').value,
@@ -671,7 +739,11 @@ localStorage.setItem('sdStrategies',JSON.stringify(strategies));
 updateStrategySelectors();
 updateStrategies();
 closeModal('strategyModal');
-showToast('Strategy saved!')}
+showToast('Strategy saved!')};
+if(hasNewImg){
+uploadImage(preview.src,function(url){doSave(url)});
+}else{
+doSave(preview.src||(existingStrat?existingStrat.screenshot:''))}}
 function deleteStrategy(id){
 if(!confirm('Delete this strategy?'))return;
 strategies=strategies.filter(function(s){return s.id!==id});
@@ -692,7 +764,7 @@ var stratTrades=trades.filter(function(t){return t.strategy===s.id&&t.outcome!==
 var wins=stratTrades.filter(function(t){return t.outcome==='Win'}).length;
 var winRate=stratTrades.length?(wins/stratTrades.length*100):0;
 var pnl=stratTrades.reduce(function(sum,t){return sum+(t.pnl||0)},0);
-return '<div class="strategy-card" style="border-left:4px solid '+s.color+'"><div class="strategy-card-header"><h4><span style="color:'+s.color+'">●</span> '+s.name+'</h4><div class="action-btns"><button class="action-btn view" onclick="viewStrategy(\''+s.id+'\')">👁️</button><button class="action-btn edit" onclick="openStrategyEditor(\''+s.id+'\')">✏️</button><button class="action-btn delete" onclick="deleteStrategy(\''+s.id+'\')">🗑️</button></div></div><div class="strategy-card-body">'+(s.description?'<p style="color:var(--text2);font-size:.85rem;margin-bottom:10px">'+s.description+'</p>':'')+'<div class="strategy-meta">'+(s.timeframes?'<span>⏱️ '+s.timeframes+'</span>':'')+(s.sessions?'<span>🌍 '+s.sessions+'</span>':'')+'</div><div class="strategy-stats"><div class="strategy-stat"><div class="strategy-stat-value">'+stratTrades.length+'</div><div class="strategy-stat-label">Trades</div></div><div class="strategy-stat"><div class="strategy-stat-value '+(winRate>=50?'positive':'negative')+'">'+winRate.toFixed(0)+'%</div><div class="strategy-stat-label">Win Rate</div></div><div class="strategy-stat"><div class="strategy-stat-value '+(pnl>=0?'positive':'negative')+'">$'+pnl.toFixed(0)+'</div><div class="strategy-stat-label">P&L</div></div></div></div></div>'}).join('');
+return '<div class="strategy-card" style="border-left:4px solid '+s.color+'"><div class="strategy-card-header"><h4><span style="color:'+s.color+'">●</span> '+s.name+'</h4><div class="action-btns"><button class="action-btn view" onclick="viewStrategy(\''+s.id+'\')">👁️</button><button class="action-btn edit" onclick="openStrategyEditor(\''+s.id+'\')">✏️</button><button class="action-btn delete" onclick="deleteStrategy(\''+s.id+'\')">🗑️</button></div></div><div class="strategy-card-body">'+(s.screenshot?'<img src="'+s.screenshot+'" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:10px;cursor:pointer" onclick="window.open(\''+s.screenshot+'\')">':'')+(s.description?'<p style="color:var(--text2);font-size:.85rem;margin-bottom:10px">'+s.description+'</p>':'')+'<div class="strategy-meta">'+(s.timeframes?'<span>⏱️ '+s.timeframes+'</span>':'')+(s.sessions?'<span>🌍 '+s.sessions+'</span>':'')+'</div><div class="strategy-stats"><div class="strategy-stat"><div class="strategy-stat-value">'+stratTrades.length+'</div><div class="strategy-stat-label">Trades</div></div><div class="strategy-stat"><div class="strategy-stat-value '+(winRate>=50?'positive':'negative')+'">'+winRate.toFixed(0)+'%</div><div class="strategy-stat-label">Win Rate</div></div><div class="strategy-stat"><div class="strategy-stat-value '+(pnl>=0?'positive':'negative')+'">$'+pnl.toFixed(0)+'</div><div class="strategy-stat-label">P&L</div></div></div></div></div>'}).join('');
 var perfData=strategies.map(function(s){
 var stratTrades=trades.filter(function(t){return t.strategy===s.id&&t.outcome!=='Open'});
 var wins=stratTrades.filter(function(t){return t.outcome==='Win'}).length;
@@ -707,10 +779,197 @@ var stratTrades=trades.filter(function(t){return t.strategy===s.id&&t.outcome!==
 var wins=stratTrades.filter(function(t){return t.outcome==='Win'}).length;
 var winRate=stratTrades.length?(wins/stratTrades.length*100):0;
 var pnl=stratTrades.reduce(function(sum,t){return sum+(t.pnl||0)},0);
-document.getElementById('tradeModalBody').innerHTML='<div style="border-left:4px solid '+s.color+';padding-left:15px;margin-bottom:20px"><h2 style="color:'+s.color+';margin-bottom:5px">'+s.name+'</h2>'+(s.description?'<p style="color:var(--text2)">'+s.description+'</p>':'')+'</div><div class="trade-detail-grid" style="margin-bottom:20px"><div class="trade-detail-item"><label>Total Trades</label><span>'+stratTrades.length+'</span></div><div class="trade-detail-item"><label>Win Rate</label><span class="'+(winRate>=50?'positive':'negative')+'">'+winRate.toFixed(1)+'%</span></div><div class="trade-detail-item"><label>Total P&L</label><span class="'+(pnl>=0?'positive':'negative')+'">$'+pnl.toFixed(2)+'</span></div></div>'+(s.entryRules&&s.entryRules.length?'<div style="margin-bottom:15px"><strong style="color:var(--green)">📥 Entry Rules:</strong><ul style="margin-top:8px;padding-left:20px;color:var(--text2)">'+s.entryRules.map(function(r){return '<li style="margin-bottom:5px">'+r+'</li>'}).join('')+'</ul></div>':'')+(s.exitRules&&s.exitRules.length?'<div style="margin-bottom:15px"><strong style="color:var(--red)">📤 Exit Rules:</strong><ul style="margin-top:8px;padding-left:20px;color:var(--text2)">'+s.exitRules.map(function(r){return '<li style="margin-bottom:5px">'+r+'</li>'}).join('')+'</ul></div>':'')+(s.riskNotes?'<div style="margin-bottom:15px"><strong style="color:var(--gold)">⚠️ Risk Management:</strong><p style="margin-top:8px;padding:10px;background:var(--bg2);border-radius:6px;color:var(--text2)">'+s.riskNotes+'</p></div>':'')+'<div style="display:flex;gap:10px;flex-wrap:wrap">'+(s.timeframes?'<span style="padding:6px 12px;background:var(--bg2);border-radius:6px;font-size:.85rem">⏱️ '+s.timeframes+'</span>':'')+(s.sessions?'<span style="padding:6px 12px;background:var(--bg2);border-radius:6px;font-size:.85rem">🌍 '+s.sessions+'</span>':'')+'</div>';
+document.getElementById('tradeModalBody').innerHTML='<div style="border-left:4px solid '+s.color+';padding-left:15px;margin-bottom:20px"><h2 style="color:'+s.color+';margin-bottom:5px">'+s.name+'</h2>'+(s.description?'<p style="color:var(--text2)">'+s.description+'</p>':'')+'</div>'+(s.screenshot?'<img src="'+s.screenshot+'" style="width:100%;max-height:300px;object-fit:contain;border-radius:8px;margin-bottom:20px">':'')+'<div class="trade-detail-grid" style="margin-bottom:20px"><div class="trade-detail-item"><label>Total Trades</label><span>'+stratTrades.length+'</span></div><div class="trade-detail-item"><label>Win Rate</label><span class="'+(winRate>=50?'positive':'negative')+'">'+winRate.toFixed(1)+'%</span></div><div class="trade-detail-item"><label>Total P&L</label><span class="'+(pnl>=0?'positive':'negative')+'">$'+pnl.toFixed(2)+'</span></div></div>'+(s.entryRules&&s.entryRules.length?'<div style="margin-bottom:15px"><strong style="color:var(--green)">📥 Entry Rules:</strong><ul style="margin-top:8px;padding-left:20px;color:var(--text2)">'+s.entryRules.map(function(r){return '<li style="margin-bottom:5px">'+r+'</li>'}).join('')+'</ul></div>':'')+(s.exitRules&&s.exitRules.length?'<div style="margin-bottom:15px"><strong style="color:var(--red)">📤 Exit Rules:</strong><ul style="margin-top:8px;padding-left:20px;color:var(--text2)">'+s.exitRules.map(function(r){return '<li style="margin-bottom:5px">'+r+'</li>'}).join('')+'</ul></div>':'')+(s.riskNotes?'<div style="margin-bottom:15px"><strong style="color:var(--gold)">⚠️ Risk Management:</strong><p style="margin-top:8px;padding:10px;background:var(--bg2);border-radius:6px;color:var(--text2)">'+s.riskNotes+'</p></div>':'')+'<div style="display:flex;gap:10px;flex-wrap:wrap">'+(s.timeframes?'<span style="padding:6px 12px;background:var(--bg2);border-radius:6px;font-size:.85rem">⏱️ '+s.timeframes+'</span>':'')+(s.sessions?'<span style="padding:6px 12px;background:var(--bg2);border-radius:6px;font-size:.85rem">🌍 '+s.sessions+'</span>':'')+'</div>';
 openModal('tradeModal')}
 
-function updateAll(){updateDashboard();updateCalendar();updateHistory();updateAnalytics();updateGallery();updateStrategies();populateFilters();updateDailyLimit()}
+// ============================================
+// BACKTEST FUNCTIONS
+// ============================================
+function openBacktestModal(id){
+document.getElementById('editBacktestId').value='';
+document.getElementById('backtestDate').value=new Date().toISOString().split('T')[0];
+document.getElementById('backtestPair').value='';
+document.getElementById('backtestDirection').value='Long';
+document.getElementById('backtestResult').value='Win';
+document.getElementById('backtestRR').value='';
+document.getElementById('backtestNotes').value='';
+document.getElementById('backtestImgPreview').style.display='none';
+document.getElementById('backtestImgPreview').src='';
+document.getElementById('backtestImgPreview').dataset.local='';
+var stratSel=document.getElementById('backtestStrategy');
+stratSel.innerHTML='<option value="">Select strategy...</option>'+strategies.map(function(s){return '<option value="'+s.id+'">'+s.name+'</option>'}).join('');
+if(id){
+var bt=backtests.find(function(b){return b.id===id});
+if(bt){
+document.getElementById('editBacktestId').value=id;
+stratSel.value=bt.strategy||'';
+document.getElementById('backtestDate').value=bt.date||'';
+document.getElementById('backtestPair').value=bt.pair||'';
+document.getElementById('backtestDirection').value=bt.direction||'Long';
+document.getElementById('backtestResult').value=bt.result||'Win';
+document.getElementById('backtestRR').value=bt.rr||'';
+document.getElementById('backtestNotes').value=bt.notes||'';
+if(bt.screenshot){document.getElementById('backtestImgPreview').src=bt.screenshot;document.getElementById('backtestImgPreview').style.display='block'}
+}}
+openModal('backtestModal')}
+
+function previewBacktestImg(){
+var f=document.getElementById('backtestScreenshot').files[0];
+if(!f)return;
+var preview=document.getElementById('backtestImgPreview');
+var reader=new FileReader();
+reader.onload=function(e){preview.src=e.target.result;preview.style.display='block';preview.dataset.local='true'};
+reader.readAsDataURL(f)}
+
+function saveBacktest(){
+var strategy=document.getElementById('backtestStrategy').value;
+var pair=document.getElementById('backtestPair').value.trim().toUpperCase();
+if(!pair){showToast('Enter pair','error');return}
+var id=document.getElementById('editBacktestId').value||'bt_'+Date.now();
+var preview=document.getElementById('backtestImgPreview');
+var hasNewImg=preview.style.display==='block'&&preview.src&&preview.dataset.local==='true';
+var doSave=function(imgUrl){
+var bt={
+id:id,
+strategy:strategy,
+date:document.getElementById('backtestDate').value,
+pair:pair,
+direction:document.getElementById('backtestDirection').value,
+result:document.getElementById('backtestResult').value,
+rr:parseFloat(document.getElementById('backtestRR').value)||0,
+notes:document.getElementById('backtestNotes').value,
+screenshot:imgUrl
+};
+var idx=backtests.findIndex(function(b){return b.id===id});
+if(idx!==-1)backtests[idx]=bt;
+else backtests.unshift(bt);
+localStorage.setItem('sdBacktests',JSON.stringify(backtests));
+updateBacktests();
+closeModal('backtestModal');
+showToast('Backtest saved!')};
+if(hasNewImg){uploadImage(preview.src,function(url){doSave(url)})}
+else{doSave(preview.src||'')}}
+
+function deleteBacktest(id){
+if(!confirm('Delete this backtest?'))return;
+backtests=backtests.filter(function(b){return b.id!==id});
+localStorage.setItem('sdBacktests',JSON.stringify(backtests));
+updateBacktests();
+showToast('Deleted')}
+
+function updateBacktests(){
+var table=document.getElementById('backtestTable');
+var stats=document.getElementById('backtestStats');
+if(!table)return;
+if(!backtests.length){
+table.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">No backtests yet. Add your first backtest trade!</td></tr>';
+stats.innerHTML='';
+return}
+var wins=backtests.filter(function(b){return b.result==='Win'}).length;
+var losses=backtests.filter(function(b){return b.result==='Loss'}).length;
+var winRate=backtests.length?(wins/backtests.length*100):0;
+var avgRR=backtests.filter(function(b){return b.rr>0}).reduce(function(s,b,i,a){return s+b.rr/a.length},0);
+stats.innerHTML='<div class="stat-card"><div class="stat-label">Total Backtests</div><div class="stat-value gold">'+backtests.length+'</div></div><div class="stat-card"><div class="stat-label">Backtest Win Rate</div><div class="stat-value '+(winRate>=50?'positive':'negative')+'">'+winRate.toFixed(1)+'%</div></div><div class="stat-card"><div class="stat-label">Wins / Losses</div><div class="stat-value"><span class="positive">'+wins+'</span> / <span class="negative">'+losses+'</span></div></div><div class="stat-card"><div class="stat-label">Avg R:R</div><div class="stat-value gold">'+avgRR.toFixed(2)+'</div></div>';
+table.innerHTML=backtests.map(function(b){
+var strat=strategies.find(function(s){return s.id===b.strategy});
+return '<tr><td>'+(strat?'<span style="color:'+strat.color+'">'+strat.name+'</span>':'<span style="color:var(--text2)">-</span>')+'</td><td>'+b.date+'</td><td><strong>'+b.pair+'</strong></td><td><span class="badge badge-'+b.direction.toLowerCase()+'">'+b.direction+'</span></td><td><span class="badge badge-'+b.result.toLowerCase()+'">'+b.result+'</span></td><td>'+(b.rr?'1:'+b.rr.toFixed(1):'-')+'</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">'+(b.notes||'-')+'</td><td><div class="action-btns"><button class="action-btn edit" onclick="openBacktestModal(\''+b.id+'\')">✏️</button><button class="action-btn delete" onclick="deleteBacktest(\''+b.id+'\')">🗑️</button></div></td></tr>'}).join('')}
+
+// ============================================
+// MISSED TRADES FUNCTIONS
+// ============================================
+function openMissedTradeModal(id){
+document.getElementById('editMissedId').value='';
+document.getElementById('missedDate').value=new Date().toISOString().split('T')[0];
+document.getElementById('missedPair').value='';
+document.getElementById('missedDirection').value='Long';
+document.getElementById('missedZone').value='Demand';
+document.getElementById('missedResult').value='Win';
+document.getElementById('missedRR').value='';
+document.getElementById('missedReason').value='Not at screen';
+document.getElementById('missedNotes').value='';
+document.getElementById('missedImgPreview').style.display='none';
+document.getElementById('missedImgPreview').src='';
+document.getElementById('missedImgPreview').dataset.local='';
+if(id){
+var mt=missedTrades.find(function(m){return m.id===id});
+if(mt){
+document.getElementById('editMissedId').value=id;
+document.getElementById('missedDate').value=mt.date||'';
+document.getElementById('missedPair').value=mt.pair||'';
+document.getElementById('missedDirection').value=mt.direction||'Long';
+document.getElementById('missedZone').value=mt.zone||'Demand';
+document.getElementById('missedResult').value=mt.result||'Win';
+document.getElementById('missedRR').value=mt.rr||'';
+document.getElementById('missedReason').value=mt.reason||'Not at screen';
+document.getElementById('missedNotes').value=mt.notes||'';
+if(mt.screenshot){document.getElementById('missedImgPreview').src=mt.screenshot;document.getElementById('missedImgPreview').style.display='block'}
+}}
+openModal('missedTradeModal')}
+
+function previewMissedImg(){
+var f=document.getElementById('missedScreenshot').files[0];
+if(!f)return;
+var preview=document.getElementById('missedImgPreview');
+var reader=new FileReader();
+reader.onload=function(e){preview.src=e.target.result;preview.style.display='block';preview.dataset.local='true'};
+reader.readAsDataURL(f)}
+
+function saveMissedTrade(){
+var pair=document.getElementById('missedPair').value.trim().toUpperCase();
+if(!pair){showToast('Enter pair','error');return}
+var id=document.getElementById('editMissedId').value||'mt_'+Date.now();
+var preview=document.getElementById('missedImgPreview');
+var hasNewImg=preview.style.display==='block'&&preview.src&&preview.dataset.local==='true';
+var doSave=function(imgUrl){
+var mt={
+id:id,
+date:document.getElementById('missedDate').value,
+pair:pair,
+direction:document.getElementById('missedDirection').value,
+zone:document.getElementById('missedZone').value,
+result:document.getElementById('missedResult').value,
+rr:parseFloat(document.getElementById('missedRR').value)||0,
+reason:document.getElementById('missedReason').value,
+notes:document.getElementById('missedNotes').value,
+screenshot:imgUrl
+};
+var idx=missedTrades.findIndex(function(m){return m.id===id});
+if(idx!==-1)missedTrades[idx]=mt;
+else missedTrades.unshift(mt);
+localStorage.setItem('sdMissed',JSON.stringify(missedTrades));
+updateMissedTrades();
+closeModal('missedTradeModal');
+showToast('Missed trade saved!')};
+if(hasNewImg){uploadImage(preview.src,function(url){doSave(url)})}
+else{doSave(preview.src||'')}}
+
+function deleteMissedTrade(id){
+if(!confirm('Delete this missed trade?'))return;
+missedTrades=missedTrades.filter(function(m){return m.id!==id});
+localStorage.setItem('sdMissed',JSON.stringify(missedTrades));
+updateMissedTrades();
+showToast('Deleted')}
+
+function updateMissedTrades(){
+var table=document.getElementById('missedTable');
+var stats=document.getElementById('missedStats');
+if(!table)return;
+if(!missedTrades.length){
+table.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">No missed trades logged. Track setups you didn\'t take!</td></tr>';
+stats.innerHTML='';
+return}
+var wins=missedTrades.filter(function(m){return m.result==='Win'}).length;
+var losses=missedTrades.filter(function(m){return m.result==='Loss'}).length;
+var winRate=missedTrades.length?(wins/missedTrades.length*100):0;
+var missedProfit=missedTrades.filter(function(m){return m.result==='Win'&&m.rr>0}).reduce(function(s,m){return s+m.rr},0);
+var reasonCounts={};
+missedTrades.forEach(function(m){reasonCounts[m.reason]=(reasonCounts[m.reason]||0)+1});
+var topReason=Object.keys(reasonCounts).sort(function(a,b){return reasonCounts[b]-reasonCounts[a]})[0]||'-';
+stats.innerHTML='<div class="stat-card"><div class="stat-label">Missed Trades</div><div class="stat-value gold">'+missedTrades.length+'</div></div><div class="stat-card"><div class="stat-label">Would Have Won</div><div class="stat-value positive">'+winRate.toFixed(0)+'%</div></div><div class="stat-card"><div class="stat-label">Missed R:R</div><div class="stat-value negative">'+missedProfit.toFixed(1)+'R</div></div><div class="stat-card"><div class="stat-label">Top Reason</div><div class="stat-value" style="font-size:1rem;color:var(--gold)">'+topReason+'</div></div>';
+table.innerHTML=missedTrades.map(function(m){
+return '<tr><td>'+m.date+'</td><td><strong>'+m.pair+'</strong></td><td><span class="badge badge-'+m.direction.toLowerCase()+'">'+m.direction+'</span></td><td><span class="badge badge-'+m.zone.toLowerCase()+'">'+m.zone+'</span></td><td><span class="badge badge-'+(m.result==='Win'?'win':m.result==='Loss'?'loss':'be')+'">'+(m.result==='Win'?'✅ Yes':m.result==='Loss'?'❌ No':m.result==='BE'?'➖ BE':'❓')+'</span></td><td>'+m.reason+'</td><td>'+(m.screenshot?'<img src="'+m.screenshot+'" style="width:50px;height:35px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="window.open(\''+m.screenshot+'\')">':'-')+'</td><td><div class="action-btns"><button class="action-btn edit" onclick="openMissedTradeModal(\''+m.id+'\')">✏️</button><button class="action-btn delete" onclick="deleteMissedTrade(\''+m.id+'\')">🗑️</button></div></td></tr>'}).join('')}
+
+function updateAll(){updateDashboard();updateCalendar();updateHistory();updateAnalytics();updateGallery();updateStrategies();updateBacktests();updateMissedTrades();populateFilters();updateDailyLimit()}
 function showTab(id){document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active')});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});document.getElementById(id).classList.add('active');var btn=document.querySelector('.tab[onclick="showTab(\''+id+'\')"]');if(btn)btn.classList.add('active');if(id==='analytics')setTimeout(updateAnalytics,100);if(id==='calendar')setTimeout(updateCalendar,100)}
 function setDefaultDate(){var n=new Date();n.setMinutes(n.getMinutes()-n.getTimezoneOffset());document.getElementById('tradeDate').value=n.toISOString().slice(0,16);document.getElementById('tradeRisk').value=settings.risk}
 function setDirection(d){document.getElementById('tradeDirection').value=d;document.querySelectorAll('.toggle-btn.long,.toggle-btn.short').forEach(function(b){b.classList.remove('selected')});document.querySelector('.toggle-btn.'+d.toLowerCase()).classList.add('selected');calculateRR()}
