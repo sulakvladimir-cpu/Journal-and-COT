@@ -1678,37 +1678,57 @@ callback('');
 })}
 
 function uploadToCloudinary(base64,callback){
-console.log('uploadToCloudinary called');
-console.log('Cloud Name:',cloudinaryConfig.cloudName);
-console.log('Upload Preset:',cloudinaryConfig.uploadPreset);
-if(!cloudinaryConfig.cloudName||!cloudinaryConfig.uploadPreset){
+console.log('=== CLOUDINARY UPLOAD DEBUG ===');
+console.log('Cloud Name:', cloudinaryConfig.cloudName);
+console.log('Upload Preset:', cloudinaryConfig.uploadPreset);
+console.log('Base64 length:', base64 ? base64.length : 0);
+
+if(!cloudinaryConfig.cloudName || !cloudinaryConfig.uploadPreset){
 showToast('Cloudinary not configured! Go to Settings.','error');
 callback('');
 return}
+
 showToast('Uploading to Cloudinary...');
-var formData=new FormData();
-formData.append('file',base64);
-formData.append('upload_preset',cloudinaryConfig.uploadPreset);
-fetch('https://api.cloudinary.com/v1_1/'+cloudinaryConfig.cloudName+'/image/upload',{
-method:'POST',
-body:formData
+
+// Convert base64 to blob for better upload
+var base64Data = base64.split(',')[1];
+var byteChars = atob(base64Data);
+var byteNumbers = new Array(byteChars.length);
+for(var i = 0; i < byteChars.length; i++){
+byteNumbers[i] = byteChars.charCodeAt(i)}
+var byteArray = new Uint8Array(byteNumbers);
+var blob = new Blob([byteArray], {type: 'image/jpeg'});
+
+var formData = new FormData();
+formData.append('file', blob, 'screenshot.jpg');
+formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+
+var url = 'https://api.cloudinary.com/v1_1/' + cloudinaryConfig.cloudName + '/image/upload';
+console.log('Upload URL:', url);
+
+fetch(url, {
+method: 'POST',
+body: formData
 })
-.then(function(res){return res.json()})
+.then(function(res){
+console.log('Response status:', res.status);
+return res.json()})
 .then(function(data){
-console.log('Cloudinary response:',data);
+console.log('Cloudinary response:', data);
 if(data.secure_url){
-console.log('Image URL:',data.secure_url);
+console.log('SUCCESS! Image URL:', data.secure_url);
 callback(data.secure_url);
-showToast('Image uploaded to Cloudinary!');
+showToast('✅ Image uploaded to Cloudinary!');
 }else{
-console.log('Cloudinary error:',data.error);
-showToast('Cloudinary error: '+(data.error?data.error.message:'Unknown'),'error');
+var errMsg = data.error ? data.error.message : 'Unknown error';
+console.log('Cloudinary error:', errMsg);
+showToast('❌ Cloudinary: ' + errMsg, 'error');
 callback('');
 }
 })
 .catch(function(err){
-console.log('Cloudinary catch error:',err);
-showToast('Cloudinary failed: '+err.message,'error');
+console.log('Fetch error:', err);
+showToast('❌ Upload failed: ' + err.message, 'error');
 callback('');
 })}
 
