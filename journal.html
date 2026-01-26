@@ -1213,8 +1213,10 @@ canvas.width=w;canvas.height=h;
 var ctx=canvas.getContext('2d');
 ctx.drawImage(img,0,0,w,h);
 var compressed=canvas.toDataURL('image/jpeg',0.6);
-document.getElementById('imgPreview').src=compressed;
-document.getElementById('imgPreview').style.display='block';
+var preview=document.getElementById('imgPreview');
+preview.src=compressed;
+preview.style.display='block';
+preview.dataset.local='true';
 };
 img.src=e.target.result;
 };
@@ -1239,9 +1241,11 @@ showToast('⚠️ Storage '+pct+'% full! Export backup soon.','error');
 return pct<95}
 
 function saveTrades(){
-if(!checkStorage()){
+// Skip storage check if cloud storage is configured (images are URLs, not base64)
+var hasCloudStorage=(cloudinaryConfig.enabled&&cloudinaryConfig.cloudName&&cloudinaryConfig.uploadPreset)||cloudinaryConfig.imgurClientId;
+if(!hasCloudStorage&&!checkStorage()){
 if(!confirm('Storage almost full! Save without screenshots to free space?')){return false}
-trades.forEach(function(t){t.screenshot=''});
+trades.forEach(function(t){if(t.screenshot&&t.screenshot.startsWith('data:')){t.screenshot=''}});
 }
 try{
 localStorage.setItem('sdPro',JSON.stringify(trades));
@@ -1486,23 +1490,17 @@ function saveCloudinaryConfig(){
 localStorage.setItem('sdCloudinary',JSON.stringify(cloudinaryConfig));
 }
 
-function previewImg(){
-var f=document.getElementById('tradeScreenshot').files[0];
-if(!f)return;
-var preview=document.getElementById('imgPreview');
-var reader=new FileReader();
-reader.onload=function(e){
-preview.src=e.target.result;
-preview.style.display='block';
-preview.dataset.local='true';
-};
-reader.readAsDataURL(f)}
-
 function uploadImage(base64,callback){
-if(cloudinaryConfig.enabled&&cloudinaryConfig.cloudName&&cloudinaryConfig.uploadPreset){
+console.log('uploadImage called, cloudinaryConfig:',cloudinaryConfig);
+if(cloudinaryConfig.cloudName&&cloudinaryConfig.uploadPreset){
+console.log('Using Cloudinary');
 uploadToCloudinary(base64,callback);
-}else{
+}else if(cloudinaryConfig.imgurClientId||imgurClientId){
+console.log('Using Imgur');
 uploadToImgur(base64,callback);
+}else{
+showToast('No image storage configured! Go to Settings.','error');
+callback('');
 }}
 
 function uploadToImgur(base64,callback){
