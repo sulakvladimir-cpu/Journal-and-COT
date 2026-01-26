@@ -1512,7 +1512,7 @@ var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];var dowData=days.map(functi
 var allMist=[];trades.forEach(function(t){(t.mistakes||'').split(',').filter(Boolean).forEach(function(m){allMist.push(m)})});var mistCounts={};allMist.forEach(function(m){mistCounts[m]=(mistCounts[m]||0)+1});var sorted=Object.keys(mistCounts).map(function(k){return[k,mistCounts[k]]}).sort(function(a,b){return b[1]-a[1]}).slice(0,8);createBar('mistakesChart','mistakes',sorted.map(function(s){return s[0]}),sorted.map(function(s){return s[1]}),'#FF1744')}
 function createBar(canvasId,key,labels,data,color){var ctx=document.getElementById(canvasId);if(!ctx)return;if(charts[key])charts[key].destroy();charts[key]=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[{data:data,backgroundColor:color||data.map(function(d){return d>=0?'#00C853':'#FF1744'})}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#2a2a2a'},ticks:{color:'#888'}},y:{grid:{color:'#2a2a2a'},ticks:{color:'#888'}}}}})}
 
-function updateGallery(){var f=document.getElementById('galleryFilter').value;var filtered=getFilteredTrades().filter(function(t){return t.screenshot});if(f)filtered=filtered.filter(function(t){return t.outcome===f});var grid=document.getElementById('galleryGrid');if(!filtered.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📷</div><h3>No screenshots</h3></div>';return}grid.innerHTML=filtered.map(function(t){return '<div class="gallery-item" onclick="viewTrade(\''+t.id+'\')"><img src="'+t.screenshot+'"><div class="gallery-item-badge"><span class="badge badge-'+t.outcome.toLowerCase()+'">'+t.outcome+'</span></div><div class="gallery-item-info"><h4>'+t.pair+' - '+t.direction+'</h4><p>'+new Date(t.date).toLocaleDateString()+' | $'+(t.pnl||0).toFixed(2)+'</p></div></div>'}).join('')}
+function updateGallery(){var f=document.getElementById('galleryFilter').value;var filtered=getFilteredTrades().filter(function(t){return t.screenshot&&t.screenshot.length>10});if(f)filtered=filtered.filter(function(t){return t.outcome===f});var grid=document.getElementById('galleryGrid');if(!filtered.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📷</div><h3>No screenshots</h3><p style="color:var(--text2)">Add screenshots to your trades to see them here</p></div>';return}grid.innerHTML=filtered.map(function(t){return '<div class="gallery-item" onclick="viewTrade(\''+t.id+'\')"><img src="'+t.screenshot+'" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22><rect fill=%22%23333%22 width=%22200%22 height=%22150%22/><text x=%2250%%22 y=%2250%%22 fill=%22%23888%22 text-anchor=%22middle%22>Image Error</text></svg>\'"><div class="gallery-item-badge"><span class="badge badge-'+t.outcome.toLowerCase()+'">'+t.outcome+'</span></div><div class="gallery-item-info"><h4>'+t.pair+' - '+t.direction+'</h4><p>'+new Date(t.date).toLocaleDateString()+' | $'+(t.pnl||0).toFixed(2)+'</p></div></div>'}).join('')}
 
 function updateProgress(){var total=20,checked=document.querySelectorAll('#checklist input:checked').length;document.getElementById('checkCount').textContent=checked+'/'+total;document.getElementById('progressFill').style.width=(checked/total*100)+'%'}
 function resetChecklist(){document.querySelectorAll('#checklist input').forEach(function(c){c.checked=false});updateProgress();showToast('Reset!')}
@@ -1678,6 +1678,13 @@ callback('');
 })}
 
 function uploadToCloudinary(base64,callback){
+console.log('uploadToCloudinary called');
+console.log('Cloud Name:',cloudinaryConfig.cloudName);
+console.log('Upload Preset:',cloudinaryConfig.uploadPreset);
+if(!cloudinaryConfig.cloudName||!cloudinaryConfig.uploadPreset){
+showToast('Cloudinary not configured! Go to Settings.','error');
+callback('');
+return}
 showToast('Uploading to Cloudinary...');
 var formData=new FormData();
 formData.append('file',base64);
@@ -1688,17 +1695,21 @@ body:formData
 })
 .then(function(res){return res.json()})
 .then(function(data){
+console.log('Cloudinary response:',data);
 if(data.secure_url){
+console.log('Image URL:',data.secure_url);
 callback(data.secure_url);
 showToast('Image uploaded to Cloudinary!');
 }else{
-showToast('Cloudinary failed, trying Imgur...','error');
-uploadToImgur(base64,callback);
+console.log('Cloudinary error:',data.error);
+showToast('Cloudinary error: '+(data.error?data.error.message:'Unknown'),'error');
+callback('');
 }
 })
 .catch(function(err){
-showToast('Cloudinary failed, trying Imgur...','error');
-uploadToImgur(base64,callback);
+console.log('Cloudinary catch error:',err);
+showToast('Cloudinary failed: '+err.message,'error');
+callback('');
 })}
 
 function saveTradeWithImage(trade,callback){
