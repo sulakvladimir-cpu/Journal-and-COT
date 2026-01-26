@@ -586,6 +586,7 @@ tr:hover{background:rgba(255,255,255,.02)}
 </div>
 
 <button class="btn btn-primary" onclick="saveCloudinarySettings()">💾 Save Image Settings</button>
+<button class="btn btn-secondary" style="margin-left:10px" onclick="testImageUpload()">🧪 Test Upload</button>
 <p id="imageSettingsStatus" style="color:var(--text2);font-size:.8rem;margin-top:10px"></p>
 </div>
 <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)"><button class="btn" style="background:var(--red);color:#fff" onclick="clearAll()">🗑️ Delete All Data</button></div></div></div></div>
@@ -1536,6 +1537,33 @@ cloudinaryConfig.enabled=!!(cloudinaryConfig.cloudName&&cloudinaryConfig.uploadP
 saveCloudinaryConfig();
 updateImageSettingsStatus();
 showToast('Image settings saved!')}
+
+function testImageUpload(){
+// Save settings first
+saveCloudinarySettings();
+
+// Create a small test image (1x1 red pixel)
+var canvas = document.createElement('canvas');
+canvas.width = 100;
+canvas.height = 100;
+var ctx = canvas.getContext('2d');
+ctx.fillStyle = '#FFD700';
+ctx.fillRect(0, 0, 100, 100);
+ctx.fillStyle = '#000';
+ctx.font = '14px Arial';
+ctx.fillText('TEST', 30, 55);
+var testBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+document.getElementById('imageSettingsStatus').innerHTML = '<span style="color:var(--gold)">⏳ Testing upload...</span>';
+
+uploadImage(testBase64, function(url){
+if(url && url.startsWith('http')){
+document.getElementById('imageSettingsStatus').innerHTML = '<span style="color:var(--green)">✅ SUCCESS! Upload works!</span><br><a href="'+url+'" target="_blank" style="color:var(--gold);font-size:.75rem">View test image →</a>';
+}else{
+document.getElementById('imageSettingsStatus').innerHTML = '<span style="color:var(--red)">❌ Upload failed. Check settings above.</span>';
+}
+});
+}
 function saveSettings(){settings.limit=parseFloat(document.getElementById('setLimit').value)||200;settings.risk=parseFloat(document.getElementById('setRisk').value)||50;settings.account=parseFloat(document.getElementById('setAccount').value)||10000;localStorage.setItem('sdSettings',JSON.stringify(settings));updateDailyLimit();showToast('Saved!')}
 function loadSettings(){var s=localStorage.getItem('sdSettings');if(s)settings=JSON.parse(s)}
 function clearAll(){if(confirm('Delete ALL trades?')&&confirm('Are you sure?')){trades=[];saveTrades();updateAll();closeModal('settingsModal');showToast('Cleared','error')}}
@@ -1630,22 +1658,16 @@ localStorage.setItem('sdCloudinary',JSON.stringify(cloudinaryConfig));
 }
 
 function uploadImage(base64,callback){
-console.log('uploadImage called, cloudinaryConfig:',cloudinaryConfig);
 if(cloudinaryConfig.cloudName&&cloudinaryConfig.uploadPreset){
-console.log('Using Cloudinary');
 uploadToCloudinary(base64,callback);
-}else if(cloudinaryConfig.imgurClientId||imgurClientId){
-console.log('Using Imgur');
-uploadToImgur(base64,callback);
 }else{
-showToast('No image storage configured! Go to Settings.','error');
-callback('');
+uploadToImgur(base64,callback);
 }}
 
 function uploadToImgur(base64,callback){
 var clientId=cloudinaryConfig.imgurClientId||imgurClientId;
 if(!clientId){
-showToast('No Imgur Client ID - saving without image','error');
+alert('❌ No Imgur Client ID!\n\nGo to Settings and either:\n1. Set up Cloudinary (recommended)\n2. Or add your own Imgur Client ID');
 callback('');
 return}
 var base64Data=base64.split(',')[1];
@@ -1664,26 +1686,21 @@ body:formData
 .then(function(data){
 if(data.success){
 callback(data.data.link);
-showToast('Image uploaded to Imgur!');
+showToast('✅ Image uploaded to Imgur!');
 }else{
-console.log('Imgur error:',data);
-showToast('Imgur failed - saving without image','error');
+alert('❌ Imgur Upload Failed!\n\nError: '+(data.data?data.data.error:'Unknown')+'\n\nThe default Imgur API key may be rate-limited. Try:\n1. Set up Cloudinary (free, recommended)\n2. Or get your own Imgur Client ID');
 callback('');
 }
 })
 .catch(function(err){
-console.log('Imgur catch error:',err);
-showToast('Imgur failed - saving without image','error');
+alert('❌ Imgur Upload Failed!\n\nError: '+err.message+'\n\nCheck your internet connection.');
 callback('');
 })}
 
 function uploadToCloudinary(base64,callback){
-// Show debug in a visible alert
-var debugInfo = 'Cloud Name: ' + cloudinaryConfig.cloudName + '\nUpload Preset: ' + cloudinaryConfig.uploadPreset;
-
 if(!cloudinaryConfig.cloudName || !cloudinaryConfig.uploadPreset){
 alert('❌ Cloudinary not configured!\n\nGo to Settings and enter:\n- Cloud Name\n- Upload Preset');
-callback('');
+uploadToImgur(base64,callback);
 return}
 
 showToast('Uploading to Cloudinary...');
@@ -1714,13 +1731,13 @@ callback(data.secure_url);
 showToast('✅ Image uploaded!');
 }else{
 var errMsg = data.error ? data.error.message : 'Unknown error';
-alert('❌ Cloudinary Upload Failed!\n\nError: ' + errMsg + '\n\nCheck that your Upload Preset is set to UNSIGNED in Cloudinary settings.');
-callback('');
+alert('❌ Cloudinary Failed: ' + errMsg + '\n\nTrying Imgur as backup...');
+uploadToImgur(base64,callback);
 }
 })
 .catch(function(err){
-alert('❌ Upload Failed!\n\nError: ' + err.message + '\n\nCheck your internet connection.');
-callback('');
+alert('❌ Cloudinary Failed: ' + err.message + '\n\nTrying Imgur as backup...');
+uploadToImgur(base64,callback);
 })}
 
 function saveTradeWithImage(trade,callback){
@@ -1863,7 +1880,6 @@ function toggleMistakeTag(btn){
 btn.classList.toggle('selected');
 var selected=Array.from(document.querySelectorAll('.mistake-tag.selected')).map(function(b){return b.dataset.v});
 document.getElementById('tradeMistakes').value=selected.join(',')}
-
 
 // ============================================
 // PASSWORD PROTECTION
