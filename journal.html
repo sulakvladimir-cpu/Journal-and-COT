@@ -558,19 +558,25 @@ tr:hover{background:rgba(255,255,255,.02)}
 </div>
 <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
 <h4 style="color:var(--gold);margin-bottom:15px">📸 Screenshot Storage</h4>
-<p style="color:var(--text2);font-size:.85rem;margin-bottom:15px">Default: Imgur (no setup). For permanent storage, use Cloudinary (free 25GB).</p>
-<div class="setting-item" style="margin-bottom:10px">
-<label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-<input type="checkbox" id="setCloudinaryEnabled" onchange="toggleCloudinary()" style="width:18px;height:18px">
-<span>Use Cloudinary (permanent storage)</span>
-</label>
+<p style="color:var(--text2);font-size:.85rem;margin-bottom:15px">Choose where to store your screenshots. Cloudinary recommended for permanent storage.</p>
+
+<div style="padding:15px;background:var(--bg2);border-radius:8px;margin-bottom:15px">
+<p style="color:var(--green);font-weight:600;margin-bottom:10px">✅ Option 1: Cloudinary (Recommended)</p>
+<p style="color:var(--text2);font-size:.8rem;margin-bottom:10px">Free 25GB, permanent storage, you control it.</p>
+<div class="setting-item" style="margin-bottom:10px"><label>Cloud Name</label><input type="text" id="setCloudName" placeholder="From Cloudinary Dashboard" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)"></div>
+<div class="setting-item" style="margin-bottom:10px"><label>Upload Preset</label><input type="text" id="setUploadPreset" placeholder="Create unsigned preset in Settings→Upload" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)"></div>
+<p style="color:var(--text2);font-size:.75rem">Setup: <a href="https://cloudinary.com" target="_blank" style="color:var(--gold)">cloudinary.com</a> → Dashboard (Cloud Name) → Settings → Upload → Add upload preset (Unsigned)</p>
 </div>
-<div id="cloudinaryFields" style="display:none;padding:15px;background:var(--bg2);border-radius:8px;margin-top:10px">
-<p style="color:var(--text2);font-size:.8rem;margin-bottom:10px">1. Sign up at <a href="https://cloudinary.com" target="_blank" style="color:var(--gold)">cloudinary.com</a><br>2. Settings → Upload → Add upload preset (Unsigned)<br>3. Copy Cloud Name & Preset Name below:</p>
-<div class="setting-item" style="margin-bottom:10px"><label>Cloud Name</label><input type="text" id="setCloudName" placeholder="e.g. dxxxxx" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)"></div>
-<div class="setting-item"><label>Upload Preset</label><input type="text" id="setUploadPreset" placeholder="e.g. trading_journal" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)"></div>
-<button class="btn btn-primary" style="margin-top:10px" onclick="saveCloudinarySettings()">Save Cloudinary Settings</button>
+
+<div style="padding:15px;background:var(--bg2);border-radius:8px;margin-bottom:15px">
+<p style="color:var(--gold);font-weight:600;margin-bottom:10px">⚠️ Option 2: Imgur (Backup)</p>
+<p style="color:var(--text2);font-size:.8rem;margin-bottom:10px">Free but images may be deleted after 6 months of inactivity.</p>
+<div class="setting-item"><label>Imgur Client ID (optional)</label><input type="text" id="setImgurClientId" placeholder="Get from api.imgur.com" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)"></div>
+<p style="color:var(--text2);font-size:.75rem;margin-top:5px">Get yours: <a href="https://api.imgur.com/oauth2/addclient" target="_blank" style="color:var(--gold)">api.imgur.com</a> → Register Application → Anonymous usage</p>
 </div>
+
+<button class="btn btn-primary" onclick="saveCloudinarySettings()">💾 Save Image Settings</button>
+<p id="imageSettingsStatus" style="color:var(--text2);font-size:.8rem;margin-top:10px"></p>
 </div>
 <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)"><button class="btn" style="background:var(--red);color:#fff" onclick="clearAll()">🗑️ Delete All Data</button></div></div></div></div>
 <div class="modal" id="dayModal"><div class="modal-content"><div class="modal-header"><h3 id="dayModalTitle">Day</h3><button class="modal-close" onclick="closeModal('dayModal')">×</button></div><div class="modal-body" id="dayModalBody"></div></div></div>
@@ -1368,11 +1374,25 @@ function updateGallery(){var f=document.getElementById('galleryFilter').value;va
 function updateProgress(){var total=20,checked=document.querySelectorAll('#checklist input:checked').length;document.getElementById('checkCount').textContent=checked+'/'+total;document.getElementById('progressFill').style.width=(checked/total*100)+'%'}
 function resetChecklist(){document.querySelectorAll('#checklist input').forEach(function(c){c.checked=false});updateProgress();showToast('Reset!')}
 
-function openSettings(){document.getElementById('setLimit').value=settings.limit;document.getElementById('setRisk').value=settings.risk;document.getElementById('setAccount').value=settings.account;document.getElementById('setCloudinaryEnabled').checked=cloudinaryConfig.enabled;document.getElementById('setCloudName').value=cloudinaryConfig.cloudName||'';document.getElementById('setUploadPreset').value=cloudinaryConfig.uploadPreset||'';document.getElementById('cloudinaryFields').style.display=cloudinaryConfig.enabled?'block':'none';openModal('settingsModal')}
+function openSettings(){document.getElementById('setLimit').value=settings.limit;document.getElementById('setRisk').value=settings.risk;document.getElementById('setAccount').value=settings.account;document.getElementById('setCloudName').value=cloudinaryConfig.cloudName||'';document.getElementById('setUploadPreset').value=cloudinaryConfig.uploadPreset||'';document.getElementById('setImgurClientId').value=cloudinaryConfig.imgurClientId||'';updateImageSettingsStatus();openModal('settingsModal')}
 
-function toggleCloudinary(){var enabled=document.getElementById('setCloudinaryEnabled').checked;document.getElementById('cloudinaryFields').style.display=enabled?'block':'none'}
+function updateImageSettingsStatus(){
+var status=document.getElementById('imageSettingsStatus');
+if(cloudinaryConfig.cloudName&&cloudinaryConfig.uploadPreset){
+status.innerHTML='<span style="color:var(--green)">✅ Cloudinary configured - images will be stored permanently</span>'}
+else if(cloudinaryConfig.imgurClientId){
+status.innerHTML='<span style="color:var(--gold)">⚠️ Using your Imgur - images may expire after 6 months</span>'}
+else{
+status.innerHTML='<span style="color:var(--red)">❌ No image storage configured - please set up Cloudinary or Imgur above</span>'}}
 
-function saveCloudinarySettings(){cloudinaryConfig.enabled=document.getElementById('setCloudinaryEnabled').checked;cloudinaryConfig.cloudName=document.getElementById('setCloudName').value.trim();cloudinaryConfig.uploadPreset=document.getElementById('setUploadPreset').value.trim();if(cloudinaryConfig.enabled&&(!cloudinaryConfig.cloudName||!cloudinaryConfig.uploadPreset)){showToast('Enter Cloud Name and Upload Preset','error');return}saveCloudinaryConfig();showToast(cloudinaryConfig.enabled?'Cloudinary enabled!':'Using Imgur')}
+function saveCloudinarySettings(){
+cloudinaryConfig.cloudName=document.getElementById('setCloudName').value.trim();
+cloudinaryConfig.uploadPreset=document.getElementById('setUploadPreset').value.trim();
+cloudinaryConfig.imgurClientId=document.getElementById('setImgurClientId').value.trim();
+cloudinaryConfig.enabled=!!(cloudinaryConfig.cloudName&&cloudinaryConfig.uploadPreset);
+saveCloudinaryConfig();
+updateImageSettingsStatus();
+showToast('Image settings saved!')}
 function saveSettings(){settings.limit=parseFloat(document.getElementById('setLimit').value)||200;settings.risk=parseFloat(document.getElementById('setRisk').value)||50;settings.account=parseFloat(document.getElementById('setAccount').value)||10000;localStorage.setItem('sdSettings',JSON.stringify(settings));updateDailyLimit();showToast('Saved!')}
 function loadSettings(){var s=localStorage.getItem('sdSettings');if(s)settings=JSON.parse(s)}
 function clearAll(){if(confirm('Delete ALL trades?')&&confirm('Are you sure?')){trades=[];saveTrades();updateAll();closeModal('settingsModal');showToast('Cleared','error')}}
@@ -1458,7 +1478,8 @@ var imgurClientId='c4a4a563c6b9ac6';
 var cloudinaryConfig=JSON.parse(localStorage.getItem('sdCloudinary'))||{
 cloudName:'',
 uploadPreset:'',
-enabled:false
+enabled:false,
+imgurClientId:''
 };
 
 function saveCloudinaryConfig(){
@@ -1485,15 +1506,22 @@ uploadToImgur(base64,callback);
 }}
 
 function uploadToImgur(base64,callback){
+var clientId=cloudinaryConfig.imgurClientId||imgurClientId;
+if(!clientId){
+showToast('No Imgur Client ID - saving without image','error');
+callback('');
+return}
 var base64Data=base64.split(',')[1];
 showToast('Uploading to Imgur...');
+var formData=new FormData();
+formData.append('image',base64Data);
+formData.append('type','base64');
 fetch('https://api.imgur.com/3/image',{
 method:'POST',
 headers:{
-'Authorization':'Client-ID '+imgurClientId,
-'Content-Type':'application/json'
+'Authorization':'Client-ID '+clientId
 },
-body:JSON.stringify({image:base64Data,type:'base64'})
+body:formData
 })
 .then(function(res){return res.json()})
 .then(function(data){
@@ -1501,13 +1529,15 @@ if(data.success){
 callback(data.data.link);
 showToast('Image uploaded to Imgur!');
 }else{
-showToast('Imgur failed, saving locally','error');
-callback(base64);
+console.log('Imgur error:',data);
+showToast('Imgur failed - saving without image','error');
+callback('');
 }
 })
 .catch(function(err){
-showToast('Imgur failed, saving locally','error');
-callback(base64);
+console.log('Imgur catch error:',err);
+showToast('Imgur failed - saving without image','error');
+callback('');
 })}
 
 function uploadToCloudinary(base64,callback){
