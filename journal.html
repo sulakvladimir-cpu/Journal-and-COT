@@ -397,6 +397,13 @@ tr:hover{background:rgba(255,255,255,.02)}
 </div>
 <div class="card-body">
 <p style="color:var(--text2);margin-bottom:15px;font-size:.9rem">Track your pair analysis and backtesting results. Customize columns to match your analysis criteria.</p>
+
+<!-- PAIR ANALYSIS STATS -->
+<div id="pairAnalyticsStats" class="stats-grid" style="margin-bottom:25px"></div>
+
+<!-- DETAILED ANALYTICS -->
+<div id="pairAnalyticsDetailed" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:25px"></div>
+
 <div style="overflow-x:auto">
 <table id="pairAnalysisTable">
 <thead><tr id="pairAnalysisHeader"></tr></thead>
@@ -1175,17 +1182,110 @@ showToast('Deleted')}
 function updatePairAnalysisTable(){
 var header=document.getElementById('pairAnalysisHeader');
 var body=document.getElementById('pairAnalysisBody');
+var statsDiv=document.getElementById('pairAnalyticsStats');
+var detailedDiv=document.getElementById('pairAnalyticsDetailed');
 if(!header||!body)return;
+
+// Update table header
 header.innerHTML=pairColumns.map(function(col){return '<th>'+col.name+'</th>'}).join('')+'<th>Actions</th>';
+
 if(!pairAnalysis.length){
 body.innerHTML='<tr><td colspan="'+(pairColumns.length+1)+'" style="text-align:center;color:var(--text2);padding:40px">No pair analysis entries yet. Add your first analysis!</td></tr>';
+if(statsDiv)statsDiv.innerHTML='';
+if(detailedDiv)detailedDiv.innerHTML='';
 return}
+
+// Update table body
 body.innerHTML=pairAnalysis.map(function(entry){
 return '<tr>'+pairColumns.map(function(col){
 var val=entry[col.id]||'-';
 if(col.type==='yesno'){
 val=val==='Yes'?'<span style="color:var(--green)">✓ Yes</span>':val==='No'?'<span style="color:var(--red)">✗ No</span>':'-'}
-return '<td>'+val+'</td>'}).join('')+'<td><div class="action-btns"><button class="action-btn edit" onclick="openPairAnalysisModal(\''+entry.id+'\')">✏️</button><button class="action-btn delete" onclick="deletePairAnalysis(\''+entry.id+'\')">🗑️</button></div></td></tr>'}).join('')}
+return '<td>'+val+'</td>'}).join('')+'<td><div class="action-btns"><button class="action-btn edit" onclick="openPairAnalysisModal(\''+entry.id+'\')">✏️</button><button class="action-btn delete" onclick="deletePairAnalysis(\''+entry.id+'\')">🗑️</button></div></td></tr>'}).join('');
+
+// Calculate Analytics
+if(statsDiv){
+var total=pairAnalysis.length;
+
+// Count Yes/No columns
+var yesNoCounts={};
+pairColumns.forEach(function(col){
+if(col.type==='yesno'){
+var yesCount=pairAnalysis.filter(function(p){return p[col.id]==='Yes'}).length;
+yesNoCounts[col.id]={yes:yesCount,no:total-yesCount,pct:Math.round(yesCount/total*100)}}});
+
+// Parse time fields (2R, Max to opposing) - extract numbers and "days"
+function parseDays(val){
+if(!val||val==='-')return null;
+var match=val.match(/(\d+)\s*days?/i);
+if(match)return parseInt(match[1]);
+var num=parseFloat(val);
+return isNaN(num)?null:num}
+
+var timeToRValues=pairAnalysis.map(function(p){return parseDays(p.timeToR)}).filter(function(v){return v!==null});
+var avgTimeToR=timeToRValues.length?timeToRValues.reduce(function(a,b){return a+b},0)/timeToRValues.length:0;
+
+var maxOppValues=pairAnalysis.map(function(p){return parseDays(p.maxToOpposing)}).filter(function(v){return v!==null});
+var avgMaxOpp=maxOppValues.length?maxOppValues.reduce(function(a,b){return a+b},0)/maxOppValues.length:0;
+
+// Parse R values
+function parseR(val){
+if(!val||val==='-')return null;
+var match=val.match(/([\d.]+)\s*R/i);
+if(match)return parseFloat(match[1]);
+return null}
+
+var rValues=pairAnalysis.map(function(p){return parseR(p.maxToOpposing)}).filter(function(v){return v!==null});
+var avgR=rValues.length?rValues.reduce(function(a,b){return a+b},0)/rValues.length:0;
+
+// Main stats
+statsDiv.innerHTML='<div class="stat-card"><div class="stat-label">Total Pairs Analyzed</div><div class="stat-value gold">'+total+'</div></div>'+
+(yesNoCounts.weeklyCoverage?'<div class="stat-card"><div class="stat-label">Weekly Coverage</div><div class="stat-value '+(yesNoCounts.weeklyCoverage.pct>=50?'positive':'negative')+'">'+yesNoCounts.weeklyCoverage.pct+'%</div><div style="font-size:.75rem;color:var(--text2)">'+yesNoCounts.weeklyCoverage.yes+' / '+total+'</div></div>':'')+
+(yesNoCounts.shortTermVal?'<div class="stat-card"><div class="stat-label">Short Term Valuation</div><div class="stat-value '+(yesNoCounts.shortTermVal.pct>=50?'positive':'negative')+'">'+yesNoCounts.shortTermVal.pct+'%</div><div style="font-size:.75rem;color:var(--text2)">'+yesNoCounts.shortTermVal.yes+' / '+total+'</div></div>':'')+
+(yesNoCounts.longTermVal?'<div class="stat-card"><div class="stat-label">Long Term Valuation</div><div class="stat-value '+(yesNoCounts.longTermVal.pct>=50?'positive':'negative')+'">'+yesNoCounts.longTermVal.pct+'%</div><div style="font-size:.75rem;color:var(--text2)">'+yesNoCounts.longTermVal.yes+' / '+total+'</div></div>':'')+
+(yesNoCounts.pocHighVol?'<div class="stat-card"><div class="stat-label">POC High Volume</div><div class="stat-value '+(yesNoCounts.pocHighVol.pct>=50?'positive':'negative')+'">'+yesNoCounts.pocHighVol.pct+'%</div><div style="font-size:.75rem;color:var(--text2)">'+yesNoCounts.pocHighVol.yes+' / '+total+'</div></div>':'')+
+(avgTimeToR?'<div class="stat-card"><div class="stat-label">Avg Time to 2R</div><div class="stat-value gold">'+avgTimeToR.toFixed(1)+' days</div></div>':'')+
+(avgR?'<div class="stat-card"><div class="stat-label">Avg Max R</div><div class="stat-value positive">'+avgR.toFixed(1)+'R</div></div>':'')
+}
+
+// Detailed Analytics
+if(detailedDiv){
+var html='';
+
+// Yes/No breakdown chart
+var yesNoData=[];
+pairColumns.forEach(function(col){
+if(col.type==='yesno'&&yesNoCounts[col.id]){
+yesNoData.push({name:col.name,yes:yesNoCounts[col.id].yes,no:yesNoCounts[col.id].no,pct:yesNoCounts[col.id].pct})}});
+
+if(yesNoData.length){
+html+='<div class="card" style="background:var(--bg2)"><div class="card-header"><h4>📊 Criteria Breakdown</h4></div><div class="card-body">';
+yesNoData.forEach(function(d){
+html+='<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.85rem">'+d.name+'</span><span style="font-size:.85rem;color:var(--gold)">'+d.pct+'%</span></div><div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+d.pct+'%;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:4px"></div></div></div>'});
+html+='</div></div>'}
+
+// Dropdown/Select breakdowns
+pairColumns.forEach(function(col){
+if(col.type==='select'&&col.options){
+var counts={};
+col.options.forEach(function(o){counts[o]=0});
+pairAnalysis.forEach(function(p){
+var val=p[col.id];
+if(val&&counts.hasOwnProperty(val))counts[val]++});
+html+='<div class="card" style="background:var(--bg2)"><div class="card-header"><h4>📈 '+col.name+'</h4></div><div class="card-body">';
+col.options.forEach(function(o){
+var pct=total?Math.round(counts[o]/total*100):0;
+html+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:.85rem">'+o+'</span><span style="font-size:.85rem"><strong>'+counts[o]+'</strong> <span style="color:var(--text2)">('+pct+'%)</span></span></div>'});
+html+='</div></div>'}});
+
+// Time analysis
+if(timeToRValues.length>1){
+var minTime=Math.min.apply(null,timeToRValues);
+var maxTime=Math.max.apply(null,timeToRValues);
+html+='<div class="card" style="background:var(--bg2)"><div class="card-header"><h4>⏱️ Time Analysis</h4></div><div class="card-body"><div class="trade-detail-grid"><div class="trade-detail-item"><label>Fastest 2R</label><span class="positive">'+minTime+' days</span></div><div class="trade-detail-item"><label>Slowest 2R</label><span class="negative">'+maxTime+' days</span></div><div class="trade-detail-item"><label>Average 2R</label><span class="gold">'+avgTimeToR.toFixed(1)+' days</span></div></div></div></div>'}
+
+detailedDiv.innerHTML=html}
+}
 
 function updateAll(){updateDashboard();updateCalendar();updateHistory();updateAnalytics();updateGallery();updateStrategies();updateBacktests();updateMissedTrades();updatePairAnalysisTable();populateFilters();updateDailyLimit()}
 function showTab(id){document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active')});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});document.getElementById(id).classList.add('active');var btn=document.querySelector('.tab[onclick="showTab(\''+id+'\')"]');if(btn)btn.classList.add('active');if(id==='analytics')setTimeout(updateAnalytics,100);if(id==='calendar')setTimeout(updateCalendar,100)}
