@@ -236,6 +236,7 @@ tr:hover{background:rgba(255,255,255,.02)}
 <button class="tab" onclick="showTab('history')">📜 History</button>
 <button class="tab" onclick="showTab('analytics')">📈 Analytics</button>
 <button class="tab" onclick="showTab('strategies')">📋 Strategies</button>
+<button class="tab" onclick="showTab('pairanalysis')">🔬 Pair Analysis</button>
 <button class="tab" onclick="showTab('gallery')">🖼️ Screenshots</button>
 <button class="tab" onclick="showTab('customize')">🎨 Customize</button>
 </div>
@@ -381,6 +382,27 @@ tr:hover{background:rgba(255,255,255,.02)}
 <p style="color:var(--text2);margin-bottom:15px;font-size:.9rem">Track setups you identified but didn't take. See what you're missing!</p>
 <div id="missedStats" class="stats-grid" style="margin-bottom:20px"></div>
 <div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Pair</th><th>Direction</th><th>Zone</th><th>Would Have Won?</th><th>Reason Not Taken</th><th>Screenshot</th><th>Actions</th></tr></thead><tbody id="missedTable"></tbody></table></div>
+</div>
+</div>
+</div>
+
+<div id="pairanalysis" class="tab-content">
+<div class="card">
+<div class="card-header">
+<h3>🔬 Backtested Pair Analysis</h3>
+<div style="display:flex;gap:10px">
+<button class="btn btn-secondary" onclick="openColumnManager()">⚙️ Manage Columns</button>
+<button class="btn btn-primary" onclick="openPairAnalysisModal()">+ Add Entry</button>
+</div>
+</div>
+<div class="card-body">
+<p style="color:var(--text2);margin-bottom:15px;font-size:.9rem">Track your pair analysis and backtesting results. Customize columns to match your analysis criteria.</p>
+<div style="overflow-x:auto">
+<table id="pairAnalysisTable">
+<thead><tr id="pairAnalysisHeader"></tr></thead>
+<tbody id="pairAnalysisBody"></tbody>
+</table>
+</div>
 </div>
 </div>
 </div>
@@ -604,6 +626,31 @@ tr:hover{background:rgba(255,255,255,.02)}
 <div style="display:flex;gap:10px;margin-top:20px"><button class="btn btn-primary" onclick="saveMissedTrade()">💾 Save Missed Trade</button><button class="btn btn-secondary" onclick="closeModal('missedTradeModal')">Cancel</button></div>
 </div></div></div>
 
+<div class="modal" id="pairAnalysisModal"><div class="modal-content" style="max-width:700px"><div class="modal-header"><h3 id="pairAnalysisModalTitle">🔬 Add Pair Analysis</h3><button class="modal-close" onclick="closeModal('pairAnalysisModal')">×</button></div><div class="modal-body">
+<input type="hidden" id="editPairAnalysisId">
+<div id="pairAnalysisForm"></div>
+<div style="display:flex;gap:10px;margin-top:20px"><button class="btn btn-primary" onclick="savePairAnalysis()">💾 Save</button><button class="btn btn-secondary" onclick="closeModal('pairAnalysisModal')">Cancel</button></div>
+</div></div></div>
+
+<div class="modal" id="columnManagerModal"><div class="modal-content" style="max-width:600px"><div class="modal-header"><h3>⚙️ Manage Columns</h3><button class="modal-close" onclick="closeModal('columnManagerModal')">×</button></div><div class="modal-body">
+<p style="color:var(--text2);margin-bottom:15px;font-size:.9rem">Add, edit, or remove columns for your pair analysis table.</p>
+<div id="columnList" style="margin-bottom:20px"></div>
+<div style="display:flex;gap:10px;padding:15px;background:var(--bg2);border-radius:8px">
+<input type="text" id="newColumnName" placeholder="Column name..." style="flex:1;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+<select id="newColumnType" style="padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+<option value="text">Text</option>
+<option value="yesno">Yes/No</option>
+<option value="select">Dropdown</option>
+<option value="number">Number</option>
+</select>
+<button class="btn btn-primary" onclick="addPairColumn()">+ Add</button>
+</div>
+<div id="columnOptionsDiv" style="display:none;margin-top:15px;padding:15px;background:var(--bg2);border-radius:8px">
+<label style="color:var(--text2);font-size:.85rem">Dropdown options (comma separated):</label>
+<input type="text" id="newColumnOptions" placeholder="Option 1, Option 2, Option 3..." style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);margin-top:8px">
+</div>
+</div></div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -612,6 +659,20 @@ let accounts=JSON.parse(localStorage.getItem('sdAccounts'))||[{id:'default',name
 let strategies=JSON.parse(localStorage.getItem('sdStrategies'))||[];
 let backtests=JSON.parse(localStorage.getItem('sdBacktests'))||[];
 let missedTrades=JSON.parse(localStorage.getItem('sdMissed'))||[];
+let pairAnalysis=JSON.parse(localStorage.getItem('sdPairAnalysis'))||[];
+var defaultPairColumns=[
+{id:'pair',name:'Pair',type:'text',locked:true},
+{id:'weeklyCoverage',name:'Weekly Coverage',type:'yesno'},
+{id:'dailyZone',name:'Daily Zone',type:'text'},
+{id:'reversalPattern',name:'Reversal Hammer/Shooting Star',type:'select',options:['No','Daily','Daily engulfing','2 D hammer','Yes engulfing']},
+{id:'shortTermVal',name:'Short Term Valuation',type:'yesno'},
+{id:'longTermVal',name:'Long Term Valuation',type:'yesno'},
+{id:'pocHighVol',name:'POC High Volume',type:'yesno'},
+{id:'timeToR',name:'2R Time',type:'text'},
+{id:'maxToOpposing',name:'Max to Opposing Valuation',type:'text'},
+{id:'notes',name:'Notes',type:'text'}
+];
+let pairColumns=JSON.parse(localStorage.getItem('sdPairColumns'))||JSON.parse(JSON.stringify(defaultPairColumns));
 var defaultCustomConfig={
 sessions:['Asian','London','New York','Overlap'],
 timeframes:['M1','M3','M5','M15','M30','H1','H2','H4','H8','D1','W1','MN'],
@@ -1000,7 +1061,127 @@ stats.innerHTML='<div class="stat-card"><div class="stat-label">Missed Trades</d
 table.innerHTML=missedTrades.map(function(m){
 return '<tr><td>'+m.date+'</td><td><strong>'+m.pair+'</strong></td><td><span class="badge badge-'+m.direction.toLowerCase()+'">'+m.direction+'</span></td><td><span class="badge badge-'+m.zone.toLowerCase()+'">'+m.zone+'</span></td><td><span class="badge badge-'+(m.result==='Win'?'win':m.result==='Loss'?'loss':'be')+'">'+(m.result==='Win'?'✅ Yes':m.result==='Loss'?'❌ No':m.result==='BE'?'➖ BE':'❓')+'</span></td><td>'+m.reason+'</td><td>'+(m.screenshot?'<img src="'+m.screenshot+'" style="width:50px;height:35px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="window.open(\''+m.screenshot+'\')">':'-')+'</td><td><div class="action-btns"><button class="action-btn edit" onclick="openMissedTradeModal(\''+m.id+'\')">✏️</button><button class="action-btn delete" onclick="deleteMissedTrade(\''+m.id+'\')">🗑️</button></div></td></tr>'}).join('')}
 
-function updateAll(){updateDashboard();updateCalendar();updateHistory();updateAnalytics();updateGallery();updateStrategies();updateBacktests();updateMissedTrades();populateFilters();updateDailyLimit()}
+// ============================================
+// PAIR ANALYSIS FUNCTIONS
+// ============================================
+function savePairColumns(){localStorage.setItem('sdPairColumns',JSON.stringify(pairColumns))}
+function savePairAnalysisData(){localStorage.setItem('sdPairAnalysis',JSON.stringify(pairAnalysis))}
+
+function openColumnManager(){
+document.getElementById('newColumnName').value='';
+document.getElementById('newColumnType').value='text';
+document.getElementById('newColumnOptions').value='';
+document.getElementById('columnOptionsDiv').style.display='none';
+renderColumnList();
+openModal('columnManagerModal')}
+
+function renderColumnList(){
+var list=document.getElementById('columnList');
+list.innerHTML=pairColumns.map(function(col,i){
+var locked=col.locked?'<span style="color:var(--text2);font-size:.75rem">(required)</span>':'<button class="action-btn delete" onclick="deletePairColumn('+i+')" style="margin-left:auto">🗑️</button>';
+return '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg3);border-radius:6px;margin-bottom:8px"><span style="color:var(--gold)">☰</span><input type="text" value="'+col.name+'" onchange="renamePairColumn('+i+',this.value)" style="flex:1;padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--text)"'+(col.locked?' disabled':'')+' ><span style="color:var(--text2);font-size:.8rem;min-width:60px">'+col.type+'</span>'+locked+'</div>'}).join('')}
+
+document.getElementById('newColumnType').addEventListener('change',function(){
+document.getElementById('columnOptionsDiv').style.display=this.value==='select'?'block':'none'});
+
+function addPairColumn(){
+var name=document.getElementById('newColumnName').value.trim();
+var type=document.getElementById('newColumnType').value;
+if(!name){showToast('Enter column name','error');return}
+var col={id:'col_'+Date.now(),name:name,type:type};
+if(type==='select'){
+var opts=document.getElementById('newColumnOptions').value.split(',').map(function(o){return o.trim()}).filter(Boolean);
+if(!opts.length){showToast('Enter dropdown options','error');return}
+col.options=opts}
+pairColumns.push(col);
+savePairColumns();
+renderColumnList();
+updatePairAnalysisTable();
+document.getElementById('newColumnName').value='';
+document.getElementById('newColumnOptions').value='';
+showToast('Column added!')}
+
+function renamePairColumn(index,newName){
+pairColumns[index].name=newName;
+savePairColumns();
+updatePairAnalysisTable()}
+
+function deletePairColumn(index){
+if(!confirm('Delete this column? Data in this column will be lost.'))return;
+var colId=pairColumns[index].id;
+pairColumns.splice(index,1);
+pairAnalysis.forEach(function(p){delete p[colId]});
+savePairColumns();
+savePairAnalysisData();
+renderColumnList();
+updatePairAnalysisTable();
+showToast('Column deleted')}
+
+function openPairAnalysisModal(id){
+document.getElementById('editPairAnalysisId').value='';
+document.getElementById('pairAnalysisModalTitle').textContent='🔬 Add Pair Analysis';
+var form=document.getElementById('pairAnalysisForm');
+var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">';
+pairColumns.forEach(function(col){
+var fieldHtml='';
+if(col.type==='text'||col.type==='number'){
+fieldHtml='<input type="'+(col.type==='number'?'number':'text')+'" id="pa_'+col.id+'" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text)">'
+}else if(col.type==='yesno'){
+fieldHtml='<select id="pa_'+col.id+'" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text)"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select>'
+}else if(col.type==='select'){
+fieldHtml='<select id="pa_'+col.id+'" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text)"><option value="">Select...</option>'+(col.options||[]).map(function(o){return '<option>'+o+'</option>'}).join('')+'</select>'
+}
+html+='<div class="form-group"><label>'+col.name+'</label>'+fieldHtml+'</div>'});
+html+='</div>';
+form.innerHTML=html;
+if(id){
+var entry=pairAnalysis.find(function(p){return p.id===id});
+if(entry){
+document.getElementById('editPairAnalysisId').value=id;
+document.getElementById('pairAnalysisModalTitle').textContent='🔬 Edit Pair Analysis';
+pairColumns.forEach(function(col){
+var el=document.getElementById('pa_'+col.id);
+if(el)el.value=entry[col.id]||''})}}
+openModal('pairAnalysisModal')}
+
+function savePairAnalysis(){
+var id=document.getElementById('editPairAnalysisId').value||'pa_'+Date.now();
+var entry={id:id};
+pairColumns.forEach(function(col){
+var el=document.getElementById('pa_'+col.id);
+entry[col.id]=el?el.value:''});
+if(!entry.pair){showToast('Enter pair name','error');return}
+var idx=pairAnalysis.findIndex(function(p){return p.id===id});
+if(idx!==-1)pairAnalysis[idx]=entry;
+else pairAnalysis.push(entry);
+savePairAnalysisData();
+updatePairAnalysisTable();
+closeModal('pairAnalysisModal');
+showToast('Saved!')}
+
+function deletePairAnalysis(id){
+if(!confirm('Delete this entry?'))return;
+pairAnalysis=pairAnalysis.filter(function(p){return p.id!==id});
+savePairAnalysisData();
+updatePairAnalysisTable();
+showToast('Deleted')}
+
+function updatePairAnalysisTable(){
+var header=document.getElementById('pairAnalysisHeader');
+var body=document.getElementById('pairAnalysisBody');
+if(!header||!body)return;
+header.innerHTML=pairColumns.map(function(col){return '<th>'+col.name+'</th>'}).join('')+'<th>Actions</th>';
+if(!pairAnalysis.length){
+body.innerHTML='<tr><td colspan="'+(pairColumns.length+1)+'" style="text-align:center;color:var(--text2);padding:40px">No pair analysis entries yet. Add your first analysis!</td></tr>';
+return}
+body.innerHTML=pairAnalysis.map(function(entry){
+return '<tr>'+pairColumns.map(function(col){
+var val=entry[col.id]||'-';
+if(col.type==='yesno'){
+val=val==='Yes'?'<span style="color:var(--green)">✓ Yes</span>':val==='No'?'<span style="color:var(--red)">✗ No</span>':'-'}
+return '<td>'+val+'</td>'}).join('')+'<td><div class="action-btns"><button class="action-btn edit" onclick="openPairAnalysisModal(\''+entry.id+'\')">✏️</button><button class="action-btn delete" onclick="deletePairAnalysis(\''+entry.id+'\')">🗑️</button></div></td></tr>'}).join('')}
+
+function updateAll(){updateDashboard();updateCalendar();updateHistory();updateAnalytics();updateGallery();updateStrategies();updateBacktests();updateMissedTrades();updatePairAnalysisTable();populateFilters();updateDailyLimit()}
 function showTab(id){document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active')});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});document.getElementById(id).classList.add('active');var btn=document.querySelector('.tab[onclick="showTab(\''+id+'\')"]');if(btn)btn.classList.add('active');if(id==='analytics')setTimeout(updateAnalytics,100);if(id==='calendar')setTimeout(updateCalendar,100)}
 function setDefaultDate(){var n=new Date();n.setMinutes(n.getMinutes()-n.getTimezoneOffset());document.getElementById('tradeDate').value=n.toISOString().slice(0,16);document.getElementById('tradeRisk').value=settings.risk}
 function setDirection(d){document.getElementById('tradeDirection').value=d;document.querySelectorAll('.toggle-btn.long,.toggle-btn.short').forEach(function(b){b.classList.remove('selected')});document.querySelector('.toggle-btn.'+d.toLowerCase()).classList.add('selected');calculateRR()}
@@ -1498,7 +1679,7 @@ document.getElementById('tradeMistakes').value=selected.join(',')}
 // PASSWORD PROTECTION
 // ============================================
 // CHANGE THIS PASSWORD TO YOUR OWN!
-var APP_PASSWORD = 'Swingelite1313-';
+var APP_PASSWORD = 'trading123';
 
 function checkPassword(){
 var input=document.getElementById('passwordInput').value;
