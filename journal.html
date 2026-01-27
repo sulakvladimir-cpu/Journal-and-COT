@@ -678,16 +678,17 @@ let backtests=JSON.parse(localStorage.getItem('sdBacktests'))||[];
 let missedTrades=JSON.parse(localStorage.getItem('sdMissed'))||[];
 let pairAnalysis=JSON.parse(localStorage.getItem('sdPairAnalysis'))||[];
 var defaultPairColumns=[
-{id:'pair',name:'Pair',type:'text',locked:true},
+{id:'pair',name:'Pair',type:'pairselect',locked:true},
 {id:'weeklyCoverage',name:'Weekly Coverage',type:'yesno'},
-{id:'dailyZone',name:'Daily Zone',type:'text'},
-{id:'reversalPattern',name:'Reversal Hammer/Shooting Star',type:'select',options:['No','Daily','Daily engulfing','2 D hammer','Yes engulfing']},
+{id:'dailyZone',name:'Daily Zone',type:'yesno'},
+{id:'entryZone',name:'Entry Zone TF',type:'select',options:['MN','W','D','4H','1H','30M','15M','5M']},
+{id:'reversalPattern',name:'Reversal Pattern',type:'select',options:['No','Daily Hammer','Daily Shooting Star','Daily Engulfing','4H Hammer','4H Shooting Star','4H Engulfing']},
 {id:'shortTermVal',name:'Short Term Valuation',type:'yesno'},
 {id:'longTermVal',name:'Long Term Valuation',type:'yesno'},
 {id:'pocHighVol',name:'POC High Volume',type:'yesno'},
 {id:'timeToR',name:'2R Time',type:'text'},
 {id:'maxToOpposing',name:'Max to Opposing Valuation',type:'text'},
-{id:'notes',name:'Notes',type:'text'}
+{id:'result',name:'Result',type:'select',options:['Win','SL','BE']}
 ];
 let pairColumns=JSON.parse(localStorage.getItem('sdPairColumns'))||JSON.parse(JSON.stringify(defaultPairColumns));
 var defaultCustomConfig={
@@ -1139,6 +1140,19 @@ document.getElementById('editPairAnalysisId').value='';
 document.getElementById('pairAnalysisModalTitle').textContent='🔬 Add Pair Analysis';
 var form=document.getElementById('pairAnalysisForm');
 var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">';
+
+// Get all pairs from customConfig
+var allPairs=[];
+var pairGroups=[
+{name:'Major',pairs:['EURUSD','GBPUSD','USDJPY','USDCHF','AUDUSD','USDCAD','NZDUSD']},
+{name:'Cross',pairs:['EURGBP','EURJPY','GBPJPY','AUDJPY','EURAUD','GBPAUD','EURNZD','GBPNZD','AUDNZD','CADJPY','CHFJPY']},
+{name:'Indices',pairs:['US30','US100','US500','GER40','UK100','JPN225','AUS200']},
+{name:'Commodities',pairs:['XAUUSD','XAGUSD','USOIL','UKOIL']},
+{name:'Crypto',pairs:['BTCUSD','ETHUSD']}
+];
+if(customConfig&&customConfig.pairs&&customConfig.pairs.length){
+pairGroups.unshift({name:'★ Custom',pairs:customConfig.pairs})}
+
 pairColumns.forEach(function(col){
 var fieldHtml='';
 if(col.type==='text'||col.type==='number'){
@@ -1147,6 +1161,8 @@ fieldHtml='<input type="'+(col.type==='number'?'number':'text')+'" id="pa_'+col.
 fieldHtml='<select id="pa_'+col.id+'" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text)"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select>'
 }else if(col.type==='select'){
 fieldHtml='<select id="pa_'+col.id+'" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text)"><option value="">Select...</option>'+(col.options||[]).map(function(o){return '<option>'+o+'</option>'}).join('')+'</select>'
+}else if(col.type==='pairselect'){
+fieldHtml='<select id="pa_'+col.id+'" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text)"><option value="">Select pair...</option>'+pairGroups.map(function(g){return '<optgroup label="'+g.name+'">'+g.pairs.map(function(p){return '<option>'+p+'</option>'}).join('')+'</optgroup>'}).join('')+'</select>'
 }
 html+='<div class="form-group"><label>'+col.name+'</label>'+fieldHtml+'</div>'});
 html+='</div>';
@@ -1229,6 +1245,8 @@ return '<tr>'+pairColumns.map(function(col){
 var val=entry[col.id]||'-';
 if(col.type==='yesno'){
 val=val==='Yes'?'<span style="color:var(--green)">✓ Yes</span>':val==='No'?'<span style="color:var(--red)">✗ No</span>':'-'}
+else if(col.id==='result'){
+val=val==='Win'?'<span class="badge badge-win">✓ Win</span>':val==='SL'?'<span class="badge badge-loss">✗ SL</span>':val==='BE'?'<span class="badge badge-be">➖ BE</span>':'-'}
 return '<td>'+val+'</td>'}).join('')+'<td><div class="action-btns"><button class="action-btn edit" onclick="openPairAnalysisModal(\''+entry.id+'\')">✏️</button><button class="action-btn delete" onclick="deletePairAnalysis(\''+entry.id+'\')">🗑️</button></div></td></tr>'}).join('');
 
 // Calculate Analytics using filtered data
@@ -1267,9 +1285,16 @@ return null}
 var rValues=filteredData.map(function(p){return parseR(p.maxToOpposing)}).filter(function(v){return v!==null});
 var avgR=rValues.length?rValues.reduce(function(a,b){return a+b},0)/rValues.length:0;
 
+// Calculate Win Rate from Result column
+var wins=filteredData.filter(function(p){return p.result==='Win'}).length;
+var losses=filteredData.filter(function(p){return p.result==='SL'}).length;
+var winRate=wins+losses>0?Math.round(wins/(wins+losses)*100):0;
+
 // Main stats
 statsDiv.innerHTML='<div class="stat-card"><div class="stat-label">'+(selectedPair?'Entries for '+selectedPair:'Total Pairs Analyzed')+'</div><div class="stat-value gold">'+total+'</div></div>'+
+'<div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value '+(winRate>=50?'positive':'negative')+'">'+winRate+'%</div><div style="font-size:.75rem;color:var(--text2)">'+wins+'W / '+losses+'L</div></div>'+
 (yesNoCounts.weeklyCoverage?'<div class="stat-card"><div class="stat-label">Weekly Coverage</div><div class="stat-value '+(yesNoCounts.weeklyCoverage.pct>=50?'positive':'negative')+'">'+yesNoCounts.weeklyCoverage.pct+'%</div><div style="font-size:.75rem;color:var(--text2)">'+yesNoCounts.weeklyCoverage.yes+' / '+total+'</div></div>':'')+
+(yesNoCounts.dailyZone?'<div class="stat-card"><div class="stat-label">Daily Zone</div><div class="stat-value '+(yesNoCounts.dailyZone.pct>=50?'positive':'negative')+'">'+yesNoCounts.dailyZone.pct+'%</div><div style="font-size:.75rem;color:var(--text2)">'+yesNoCounts.dailyZone.yes+' / '+total+'</div></div>':'')+
 (yesNoCounts.shortTermVal?'<div class="stat-card"><div class="stat-label">Short Term Valuation</div><div class="stat-value '+(yesNoCounts.shortTermVal.pct>=50?'positive':'negative')+'">'+yesNoCounts.shortTermVal.pct+'%</div><div style="font-size:.75rem;color:var(--text2)">'+yesNoCounts.shortTermVal.yes+' / '+total+'</div></div>':'')+
 (yesNoCounts.longTermVal?'<div class="stat-card"><div class="stat-label">Long Term Valuation</div><div class="stat-value '+(yesNoCounts.longTermVal.pct>=50?'positive':'negative')+'">'+yesNoCounts.longTermVal.pct+'%</div><div style="font-size:.75rem;color:var(--text2)">'+yesNoCounts.longTermVal.yes+' / '+total+'</div></div>':'')+
 (yesNoCounts.pocHighVol?'<div class="stat-card"><div class="stat-label">POC High Volume</div><div class="stat-value '+(yesNoCounts.pocHighVol.pct>=50?'positive':'negative')+'">'+yesNoCounts.pocHighVol.pct+'%</div><div style="font-size:.75rem;color:var(--text2)">'+yesNoCounts.pocHighVol.yes+' / '+total+'</div></div>':'')+
