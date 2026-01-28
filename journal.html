@@ -242,6 +242,10 @@ tr:hover{background:rgba(255,255,255,.02)}
 </div>
 
 <div id="dashboard" class="tab-content active">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+<h2 style="margin:0">📊 Dashboard</h2>
+<button class="btn btn-primary" onclick="generateWeeklyReport()">📄 Weekly PDF Report</button>
+</div>
 <div class="weekly-summary" id="weeklySummary"></div>
 <div class="stats-grid" id="statsGrid"></div>
 <div class="charts-grid">
@@ -449,39 +453,65 @@ tr:hover{background:rgba(255,255,255,.02)}
 </div>
 
 <div id="checklist" class="tab-content">
-<div style="margin-bottom:20px;padding:15px;background:var(--bg3);border-radius:8px"><div style="display:flex;justify-content:space-between"><span>Progress</span><span id="checkCount">0/20</span></div><div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div></div>
-<div class="checklist-grid">
-<div class="checklist-section"><h3>📈 Market Structure</h3>
-<div class="checklist-item"><input type="checkbox" id="c1" onchange="updateProgress()"><label for="c1">HTF trend clear (D1/H4)</label></div>
-<div class="checklist-item"><input type="checkbox" id="c2" onchange="updateProgress()"><label for="c2">Price at S&D zone</label></div>
-<div class="checklist-item"><input type="checkbox" id="c3" onchange="updateProgress()"><label for="c3">Zone fresh/lightly tested</label></div>
-<div class="checklist-item"><input type="checkbox" id="c4" onchange="updateProgress()"><label for="c4">Clear BOS present</label></div>
-<div class="checklist-item"><input type="checkbox" id="c5" onchange="updateProgress()"><label for="c5">Liquidity identified</label></div>
-</div>
-<div class="checklist-section"><h3>🎯 Zone Quality</h3>
-<div class="checklist-item"><input type="checkbox" id="c6" onchange="updateProgress()"><label for="c6">Explosive move from zone</label></div>
-<div class="checklist-item"><input type="checkbox" id="c7" onchange="updateProgress()"><label for="c7">Tight base</label></div>
-<div class="checklist-item"><input type="checkbox" id="c8" onchange="updateProgress()"><label for="c8">On key level</label></div>
-<div class="checklist-item"><input type="checkbox" id="c9" onchange="updateProgress()"><label for="c9">Aligns with HTF</label></div>
-<div class="checklist-item"><input type="checkbox" id="c10" onchange="updateProgress()"><label for="c10">Less than 3 touches</label></div>
-</div>
-<div class="checklist-section"><h3>🚀 Entry Criteria</h3>
-<div class="checklist-item"><input type="checkbox" id="c11" onchange="updateProgress()"><label for="c11">Valid entry trigger</label></div>
-<div class="checklist-item"><input type="checkbox" id="c12" onchange="updateProgress()"><label for="c12">R:R min 1:2</label></div>
-<div class="checklist-item"><input type="checkbox" id="c13" onchange="updateProgress()"><label for="c13">Size within 1-2% risk</label></div>
-<div class="checklist-item"><input type="checkbox" id="c14" onchange="updateProgress()"><label for="c14">Room to TP</label></div>
-<div class="checklist-item"><input type="checkbox" id="c15" onchange="updateProgress()"><label for="c15">Optimal session</label></div>
-</div>
-<div class="checklist-section"><h3>🧠 Psychology</h3>
-<div class="checklist-item"><input type="checkbox" id="c16" onchange="updateProgress()"><label for="c16">Trading plan, not emotions</label></div>
-<div class="checklist-item"><input type="checkbox" id="c17" onchange="updateProgress()"><label for="c17">NOT revenge trade</label></div>
-<div class="checklist-item"><input type="checkbox" id="c18" onchange="updateProgress()"><label for="c18">Well-rested & focused</label></div>
-<div class="checklist-item"><input type="checkbox" id="c19" onchange="updateProgress()"><label for="c19">Risk accepted</label></div>
-<div class="checklist-item"><input type="checkbox" id="c20" onchange="updateProgress()"><label for="c20">OK if this is a loss</label></div>
+<div class="card">
+<div class="card-header">
+<h3>📋 Trade Quality Scorer</h3>
+<div style="display:flex;gap:10px">
+<select id="qualityStrategy" class="filter-select" onchange="loadQualityChecklist()" style="min-width:150px">
+<option value="">Select Strategy...</option>
+</select>
+<button class="btn btn-secondary" onclick="openQualityEditor()">⚙️ Edit Checklists</button>
 </div>
 </div>
-<div style="margin-top:20px"><button class="btn btn-secondary" onclick="resetChecklist()">🔄 Reset Checklist</button></div>
+<div class="card-body">
+
+<!-- QUALITY SCORE DISPLAY -->
+<div style="display:grid;grid-template-columns:1fr 300px;gap:30px;margin-bottom:30px">
+<div id="qualityChecklistArea">
+<p style="color:var(--text2);text-align:center;padding:40px">Select a strategy to load its checklist</p>
 </div>
+
+<!-- SCORE PANEL -->
+<div style="background:var(--bg2);border-radius:12px;padding:20px">
+<div style="text-align:center;margin-bottom:20px">
+<div style="font-size:3rem;font-weight:700" id="qualityScoreValue">-</div>
+<div style="color:var(--text2)">Quality Score</div>
+</div>
+<div style="display:flex;justify-content:center;gap:30px;margin-bottom:20px">
+<div style="text-align:center"><div style="font-size:1.5rem;color:var(--green)" id="qualityPro">0</div><div style="font-size:.8rem;color:var(--text2)">✓ PRO</div></div>
+<div style="text-align:center"><div style="font-size:1.5rem;color:var(--red)" id="qualityCon">0</div><div style="font-size:.8rem;color:var(--text2)">✗ PROTI</div></div>
+</div>
+<div style="background:var(--bg3);border-radius:8px;padding:15px;text-align:center">
+<div style="font-size:.9rem;color:var(--text2)">Setup Grade</div>
+<div style="font-size:1.5rem;font-weight:700" id="qualityGrade">-</div>
+</div>
+<button class="btn btn-primary" style="width:100%;margin-top:15px" onclick="copyQualityToTrade()">📋 Copy to New Trade</button>
+<button class="btn btn-secondary" style="width:100%;margin-top:10px" onclick="resetQualityChecklist()">🔄 Reset</button>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- QUALITY CHECKLIST EDITOR MODAL -->
+<div class="modal" id="qualityEditorModal"><div class="modal-content" style="max-width:900px;max-height:90vh;overflow-y:auto"><div class="modal-header"><h3>⚙️ Edit Quality Checklists</h3><button class="modal-close" onclick="closeModal('qualityEditorModal')">×</button></div><div class="modal-body">
+<p style="color:var(--text2);margin-bottom:20px">Create custom checklists for each strategy. Items checked count as PRO, unchecked as PROTI.</p>
+
+<div style="display:flex;gap:10px;margin-bottom:20px">
+<select id="editQualityStrategy" class="filter-select" onchange="loadQualityEditorItems()" style="flex:1">
+<option value="">Select strategy to edit...</option>
+</select>
+<button class="btn btn-primary" onclick="createNewQualitySection()">+ Add Section</button>
+</div>
+
+<div id="qualityEditorSections"></div>
+
+<div style="display:flex;gap:10px;margin-top:20px">
+<button class="btn btn-primary" onclick="saveQualityConfig()">💾 Save Changes</button>
+<button class="btn btn-secondary" onclick="closeModal('qualityEditorModal')">Cancel</button>
+</div>
+</div></div></div>
 </div>
 
 <div id="customize" class="tab-content">
@@ -740,7 +770,7 @@ let currentAccount='all';
 let settings=JSON.parse(localStorage.getItem('sdSettings'))||{limit:200,risk:50,account:10000};
 let charts={},currentMonth=new Date();
 
-document.addEventListener('DOMContentLoaded',function(){loadSettings();setDefaultDate();updateAccountSelectors();updateStrategySelectors();setupZoneScoreListeners();updateStorageIndicator();buildCustomLists();rebuildFormSelects();updateAll()});
+document.addEventListener('DOMContentLoaded',function(){loadSettings();setDefaultDate();updateAccountSelectors();updateStrategySelectors();setupZoneScoreListeners();updateStorageIndicator();buildCustomLists();rebuildFormSelects();initQualityScorer();updateAll()});
 
 function updateStorageIndicator(){
 var used=getStorageUsage();
@@ -810,6 +840,7 @@ showToast('Account deleted')}
 function updateStrategySelectors(){
 var formSel=document.getElementById('tradeStrategy');
 if(formSel){formSel.innerHTML='<option value="">No Strategy</option>'+strategies.map(function(s){return '<option value="'+s.id+'" style="color:'+s.color+'">'+s.name+'</option>'}).join('')}
+initQualityScorer();
 }
 function openStrategyEditor(id){
 document.getElementById('editStrategyId').value='';
@@ -1643,7 +1674,291 @@ function createBar(canvasId,key,labels,data,color){var ctx=document.getElementBy
 function updateGallery(){var f=document.getElementById('galleryFilter').value;var filtered=getFilteredTrades().filter(function(t){return t.screenshot&&t.screenshot.length>10});if(f)filtered=filtered.filter(function(t){return t.outcome===f});var grid=document.getElementById('galleryGrid');if(!filtered.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📷</div><h3>No screenshots</h3><p style="color:var(--text2)">Add screenshots to your trades to see them here</p></div>';return}grid.innerHTML=filtered.map(function(t){return '<div class="gallery-item" onclick="viewTrade(\''+t.id+'\')"><img src="'+t.screenshot+'" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22><rect fill=%22%23333%22 width=%22200%22 height=%22150%22/><text x=%2250%%22 y=%2250%%22 fill=%22%23888%22 text-anchor=%22middle%22>Image Error</text></svg>\'"><div class="gallery-item-badge"><span class="badge badge-'+t.outcome.toLowerCase()+'">'+t.outcome+'</span></div><div class="gallery-item-info"><h4>'+t.pair+' - '+t.direction+'</h4><p>'+new Date(t.date).toLocaleDateString()+' | $'+(t.pnl||0).toFixed(2)+'</p></div></div>'}).join('')}
 
 function updateProgress(){var total=20,checked=document.querySelectorAll('#checklist input:checked').length;document.getElementById('checkCount').textContent=checked+'/'+total;document.getElementById('progressFill').style.width=(checked/total*100)+'%'}
-function resetChecklist(){document.querySelectorAll('#checklist input').forEach(function(c){c.checked=false});updateProgress();showToast('Reset!')}
+
+// ============================================
+// QUALITY SCORER SYSTEM
+// ============================================
+var qualityChecklists=JSON.parse(localStorage.getItem('sdQualityChecklists'))||{};
+var defaultQualityTemplate={
+sections:[
+{name:'📊 Analysis',items:[
+{text:'Weekly price action',pro:true},
+{text:'Daily S&D',pro:true},
+{text:'4H Swing MS',pro:true},
+{text:'4H Internal MS',pro:true},
+{text:'4H S&D',pro:true},
+{text:'FVG 50%',pro:true},
+{text:'0.382 level',pro:true},
+{text:'0.5 level',pro:true},
+{text:'GP (Golden Pocket)',pro:true},
+{text:'Balance levels',pro:true},
+{text:'15m Swing MS',pro:true},
+{text:'15m Internal MS',pro:true},
+{text:'15m S&D',pro:true},
+{text:'LQ (Liquidity)',pro:true},
+{text:'nPOC',pro:true},
+{text:'Daily Bias',pro:true},
+{text:'Volume',pro:true},
+{text:'VWAP',pro:true},
+{text:'dOpen',pro:true},
+{text:'wOpen',pro:true},
+{text:'Asia session',pro:true},
+{text:'Market open time',pro:true},
+{text:'Premium/Discount',pro:true},
+{text:'DXY correlation',pro:true},
+{text:'Entry Model',pro:true}
+]},
+{name:'🎯 Entry (Vstup)',items:[
+{text:'Structure change 1m/5m',pro:true},
+{text:'S/D 1m/5m',pro:true},
+{text:'0.382',pro:true},
+{text:'0.5',pro:true},
+{text:'GP',pro:true},
+{text:'FVG',pro:true},
+{text:'Složená svíčka',pro:true}
+]},
+{name:'🎯 Take Profit',items:[
+{text:'Strong S&D zone',pro:true},
+{text:'Local LQ',pro:true},
+{text:'Close VWAP',pro:true},
+{text:'nPOC / POC',pro:true},
+{text:'Asian low/high',pro:true},
+{text:'Close of candles',pro:true}
+]},
+{name:'🛑 Stop Loss',items:[
+{text:'EURUSD - London 8-12 pips',pro:true},
+{text:'XAUUSD - Frankfurt min 400 pips',pro:true}
+]}
+]};
+
+function initQualityScorer(){
+var sel=document.getElementById('qualityStrategy');
+if(!sel)return;
+sel.innerHTML='<option value="">Select Strategy...</option>'+strategies.map(function(s){
+return '<option value="'+s.id+'">'+s.name+'</option>'}).join('');
+}
+
+function loadQualityChecklist(){
+var stratId=document.getElementById('qualityStrategy').value;
+var area=document.getElementById('qualityChecklistArea');
+if(!stratId){
+area.innerHTML='<p style="color:var(--text2);text-align:center;padding:40px">Select a strategy to load its checklist</p>';
+resetQualityDisplay();
+return}
+var config=qualityChecklists[stratId]||JSON.parse(JSON.stringify(defaultQualityTemplate));
+var html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">';
+config.sections.forEach(function(sec,si){
+html+='<div style="background:var(--bg2);border-radius:10px;padding:15px"><h4 style="color:var(--gold);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">'+sec.name+'</h4>';
+sec.items.forEach(function(item,ii){
+var id='qc_'+si+'_'+ii;
+html+='<div class="quality-item" style="display:flex;align-items:center;padding:8px;margin:4px 0;background:var(--bg3);border-radius:6px;cursor:pointer" onclick="toggleQualityItem(this,\''+id+'\')">';
+html+='<input type="checkbox" id="'+id+'" style="margin-right:10px" onchange="updateQualityScore()">';
+html+='<label for="'+id+'" style="flex:1;cursor:pointer;font-size:.9rem">'+item.text+'</label></div>'});
+html+='</div>'});
+html+='</div>';
+area.innerHTML=html;
+updateQualityScore();
+}
+
+function toggleQualityItem(el,id){
+var cb=document.getElementById(id);
+cb.checked=!cb.checked;
+el.style.background=cb.checked?'rgba(0,200,83,0.2)':'var(--bg3)';
+el.style.borderLeft=cb.checked?'3px solid var(--green)':'none';
+updateQualityScore();
+}
+
+function updateQualityScore(){
+var checks=document.querySelectorAll('#qualityChecklistArea input[type="checkbox"]');
+var total=checks.length;
+var pro=0;
+checks.forEach(function(c){if(c.checked)pro++});
+var proti=total-pro;
+var pct=total?Math.round(pro/total*100):0;
+document.getElementById('qualityPro').textContent=pro;
+document.getElementById('qualityCon').textContent=proti;
+document.getElementById('qualityScoreValue').textContent=pct+'%';
+document.getElementById('qualityScoreValue').style.color=pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)';
+var grade=pct>=90?'A+ Setup':pct>=80?'A Setup':pct>=70?'B Setup':pct>=60?'C Setup':'D Setup (Avoid)';
+document.getElementById('qualityGrade').textContent=grade;
+document.getElementById('qualityGrade').style.color=pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)';
+// Update visual state of items
+checks.forEach(function(c){
+var item=c.closest('.quality-item');
+if(item){
+item.style.background=c.checked?'rgba(0,200,83,0.15)':'var(--bg3)';
+item.style.borderLeft=c.checked?'3px solid var(--green)':'3px solid transparent'}});
+}
+
+function resetQualityDisplay(){
+document.getElementById('qualityPro').textContent='0';
+document.getElementById('qualityCon').textContent='0';
+document.getElementById('qualityScoreValue').textContent='-';
+document.getElementById('qualityScoreValue').style.color='var(--text)';
+document.getElementById('qualityGrade').textContent='-';
+}
+
+function resetQualityChecklist(){
+document.querySelectorAll('#qualityChecklistArea input[type="checkbox"]').forEach(function(c){
+c.checked=false;
+var item=c.closest('.quality-item');
+if(item){item.style.background='var(--bg3)';item.style.borderLeft='3px solid transparent'}});
+updateQualityScore();
+showToast('Checklist reset!');
+}
+
+function copyQualityToTrade(){
+var stratId=document.getElementById('qualityStrategy').value;
+var checks=document.querySelectorAll('#qualityChecklistArea input[type="checkbox"]');
+var total=checks.length;
+var pro=0;
+checks.forEach(function(c){if(c.checked)pro++});
+var pct=total?Math.round(pro/total*100):0;
+var grade=pct>=90?'A+':pct>=80?'A':pct>=70?'B':pct>=60?'C':'D';
+// Store in session for new trade
+sessionStorage.setItem('qualityScore',pct);
+sessionStorage.setItem('qualityGrade',grade);
+sessionStorage.setItem('qualityStrategy',stratId);
+showToast('Score copied! Open New Trade to use it.');
+showTab('newtrade');
+if(stratId){document.getElementById('tradeStrategy').value=stratId}
+document.getElementById('tradeSetup').value=grade;
+}
+
+function openQualityEditor(){
+var sel=document.getElementById('editQualityStrategy');
+sel.innerHTML='<option value="">Select strategy to edit...</option>'+strategies.map(function(s){
+return '<option value="'+s.id+'">'+s.name+'</option>'}).join('');
+document.getElementById('qualityEditorSections').innerHTML='<p style="color:var(--text2);text-align:center;padding:30px">Select a strategy to edit its checklist</p>';
+openModal('qualityEditorModal');
+}
+
+function loadQualityEditorItems(){
+var stratId=document.getElementById('editQualityStrategy').value;
+var container=document.getElementById('qualityEditorSections');
+if(!stratId){
+container.innerHTML='<p style="color:var(--text2);text-align:center;padding:30px">Select a strategy to edit its checklist</p>';
+return}
+var config=qualityChecklists[stratId]||JSON.parse(JSON.stringify(defaultQualityTemplate));
+var html='';
+config.sections.forEach(function(sec,si){
+html+='<div class="quality-editor-section" style="background:var(--bg2);border-radius:10px;padding:15px;margin-bottom:15px" data-si="'+si+'">';
+html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+html+='<input type="text" value="'+sec.name+'" class="section-name-input" style="background:transparent;border:none;color:var(--gold);font-size:1.1rem;font-weight:600;flex:1" onchange="updateSectionName('+si+',this.value)">';
+html+='<button class="btn btn-sm" style="background:var(--red);color:#fff;padding:4px 8px" onclick="deleteQualitySection('+si+')">🗑️</button></div>';
+html+='<div class="section-items">';
+sec.items.forEach(function(item,ii){
+html+='<div style="display:flex;align-items:center;gap:8px;margin:6px 0;padding:8px;background:var(--bg3);border-radius:6px">';
+html+='<span style="cursor:move;color:var(--text2)">☰</span>';
+html+='<input type="text" value="'+item.text+'" style="flex:1;padding:6px;background:var(--bg1);border:1px solid var(--border);border-radius:4px;color:var(--text)" onchange="updateQualityItem('+si+','+ii+',this.value)">';
+html+='<button onclick="deleteQualityItem('+si+','+ii+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1.2rem">×</button></div>'});
+html+='<button class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="addQualityItem('+si+')">+ Add Item</button>';
+html+='</div></div>'});
+container.innerHTML=html;
+}
+
+function createNewQualitySection(){
+var stratId=document.getElementById('editQualityStrategy').value;
+if(!stratId){showToast('Select a strategy first','error');return}
+if(!qualityChecklists[stratId])qualityChecklists[stratId]=JSON.parse(JSON.stringify(defaultQualityTemplate));
+qualityChecklists[stratId].sections.push({name:'📌 New Section',items:[{text:'New item',pro:true}]});
+loadQualityEditorItems();
+}
+
+function updateSectionName(si,val){
+var stratId=document.getElementById('editQualityStrategy').value;
+if(qualityChecklists[stratId])qualityChecklists[stratId].sections[si].name=val;
+}
+
+function deleteQualitySection(si){
+if(!confirm('Delete this section?'))return;
+var stratId=document.getElementById('editQualityStrategy').value;
+if(qualityChecklists[stratId])qualityChecklists[stratId].sections.splice(si,1);
+loadQualityEditorItems();
+}
+
+function addQualityItem(si){
+var stratId=document.getElementById('editQualityStrategy').value;
+if(qualityChecklists[stratId])qualityChecklists[stratId].sections[si].items.push({text:'New item',pro:true});
+loadQualityEditorItems();
+}
+
+function updateQualityItem(si,ii,val){
+var stratId=document.getElementById('editQualityStrategy').value;
+if(qualityChecklists[stratId])qualityChecklists[stratId].sections[si].items[ii].text=val;
+}
+
+function deleteQualityItem(si,ii){
+var stratId=document.getElementById('editQualityStrategy').value;
+if(qualityChecklists[stratId])qualityChecklists[stratId].sections[si].items.splice(ii,1);
+loadQualityEditorItems();
+}
+
+function saveQualityConfig(){
+localStorage.setItem('sdQualityChecklists',JSON.stringify(qualityChecklists));
+closeModal('qualityEditorModal');
+loadQualityChecklist();
+showToast('Checklist saved!');
+}
+
+// ============================================
+// PDF REPORT GENERATOR
+// ============================================
+function generateWeeklyReport(){
+var today=new Date();
+var weekAgo=new Date(today.getTime()-7*24*60*60*1000);
+var weekTrades=trades.filter(function(t){
+var d=new Date(t.date);
+return d>=weekAgo&&d<=today&&t.outcome!=='Open'});
+var wins=weekTrades.filter(function(t){return t.outcome==='Win'}).length;
+var losses=weekTrades.filter(function(t){return t.outcome==='Loss'}).length;
+var totalPnL=weekTrades.reduce(function(s,t){return s+(t.pnl||0)},0);
+var winRate=weekTrades.length?Math.round(wins/weekTrades.length*100):0;
+var avgRR=weekTrades.length?weekTrades.reduce(function(s,t){return s+(t.rr||0)},0)/weekTrades.length:0;
+var bestTrade=weekTrades.reduce(function(best,t){return(t.pnl||0)>(best.pnl||0)?t:best},{pnl:0});
+var worstTrade=weekTrades.reduce(function(worst,t){return(t.pnl||0)<(worst.pnl||0)?t:worst},{pnl:0});
+
+var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Weekly Trading Report</title><style>';
+html+='body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#1a1a2e;color:#eee;padding:40px;max-width:900px;margin:0 auto}';
+html+='h1{color:#FFD700;border-bottom:2px solid #FFD700;padding-bottom:10px}h2{color:#FFD700;margin-top:30px}';
+html+='.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:20px 0}';
+html+='.stat-card{background:#252540;padding:20px;border-radius:10px;text-align:center}';
+html+='.stat-value{font-size:2rem;font-weight:700}.positive{color:#00C853}.negative{color:#FF1744}.gold{color:#FFD700}';
+html+='.stat-label{color:#888;font-size:.85rem;margin-top:5px}';
+html+='table{width:100%;border-collapse:collapse;margin:20px 0}th,td{padding:12px;text-align:left;border-bottom:1px solid #333}';
+html+='th{background:#252540;color:#FFD700}.badge{padding:4px 10px;border-radius:4px;font-size:.85rem}';
+html+='.badge-win{background:#00C853;color:#fff}.badge-loss{background:#FF1744;color:#fff}';
+html+='</style></head><body>';
+html+='<h1>📊 Weekly Trading Report</h1>';
+html+='<p style="color:#888">'+weekAgo.toLocaleDateString()+' - '+today.toLocaleDateString()+'</p>';
+html+='<div class="stats-grid">';
+html+='<div class="stat-card"><div class="stat-value gold">'+weekTrades.length+'</div><div class="stat-label">Total Trades</div></div>';
+html+='<div class="stat-card"><div class="stat-value '+(winRate>=50?'positive':'negative')+'">'+winRate+'%</div><div class="stat-label">Win Rate</div></div>';
+html+='<div class="stat-card"><div class="stat-value '+(totalPnL>=0?'positive':'negative')+'">$'+totalPnL.toFixed(2)+'</div><div class="stat-label">Total P&L</div></div>';
+html+='<div class="stat-card"><div class="stat-value gold">'+avgRR.toFixed(2)+'</div><div class="stat-label">Avg R:R</div></div>';
+html+='</div>';
+html+='<div class="stats-grid" style="grid-template-columns:1fr 1fr">';
+html+='<div class="stat-card"><div class="stat-label">Best Trade</div><div class="stat-value positive">$'+(bestTrade.pnl||0).toFixed(2)+'</div><div style="color:#888;margin-top:5px">'+(bestTrade.pair||'-')+' '+(bestTrade.direction||'')+'</div></div>';
+html+='<div class="stat-card"><div class="stat-label">Worst Trade</div><div class="stat-value negative">$'+(worstTrade.pnl||0).toFixed(2)+'</div><div style="color:#888;margin-top:5px">'+(worstTrade.pair||'-')+' '+(worstTrade.direction||'')+'</div></div>';
+html+='</div>';
+html+='<h2>📜 Trade Log</h2><table><thead><tr><th>Date</th><th>Pair</th><th>Direction</th><th>R:R</th><th>Result</th><th>P&L</th></tr></thead><tbody>';
+weekTrades.forEach(function(t){
+html+='<tr><td>'+new Date(t.date).toLocaleDateString()+'</td><td><strong>'+t.pair+'</strong></td><td>'+t.direction+'</td><td>'+t.rr.toFixed(2)+'</td><td><span class="badge badge-'+t.outcome.toLowerCase()+'">'+t.outcome+'</span></td><td class="'+(t.pnl>=0?'positive':'negative')+'">$'+(t.pnl||0).toFixed(2)+'</td></tr>'});
+html+='</tbody></table>';
+html+='<h2>📝 Weekly Review</h2>';
+html+='<div style="background:#252540;padding:20px;border-radius:10px">';
+html+='<p><strong>What went well:</strong></p><p style="color:#888;min-height:50px">___________________________________</p>';
+html+='<p><strong>What to improve:</strong></p><p style="color:#888;min-height:50px">___________________________________</p>';
+html+='<p><strong>Focus for next week:</strong></p><p style="color:#888;min-height:50px">___________________________________</p>';
+html+='</div>';
+html+='<p style="text-align:center;color:#444;margin-top:40px">Generated by S&D Trading Journal Pro</p>';
+html+='</body></html>';
+
+var win=window.open('','_blank');
+win.document.write(html);
+win.document.close();
+win.print();
+}
 
 function openSettings(){document.getElementById('setLimit').value=settings.limit;document.getElementById('setRisk').value=settings.risk;document.getElementById('setAccount').value=settings.account;document.getElementById('setCloudName').value=cloudinaryConfig.cloudName||'';document.getElementById('setUploadPreset').value=cloudinaryConfig.uploadPreset||'';document.getElementById('setImgurClientId').value=cloudinaryConfig.imgurClientId||'';updateImageSettingsStatus();openModal('settingsModal')}
 
