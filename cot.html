@@ -168,23 +168,23 @@
     // CFTC API Endpoint - Futures Only
     const API_FUTURES_ONLY = 'https://publicreporting.cftc.gov/resource/6dca-aqww.json';
     
-    // Contract mappings - Using simple search terms from working script
+    // Contract mappings - Using EXACT contract names from CFTC reports
     const CONTRACT_MAP = {
-      DXY: { search: 'U.S. DOLLAR INDEX', exchange: 'ICE FUTURES U.S.' },
-      EUR: { search: 'EURO FX', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      GBP: { search: 'BRITISH POUND', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      JPY: { search: 'JAPANESE YEN', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      AUD: { search: 'AUSTRALIAN DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      CAD: { search: 'CANADIAN DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      NZD: { search: 'NZ DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      CHF: { search: 'SWISS FRANC', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      XAU: { search: 'GOLD', exchange: 'COMMODITY EXCHANGE INC', exclude: 'MICRO' },
-      XAG: { search: 'SILVER', exchange: 'COMMODITY EXCHANGE INC', exclude: 'MICRO' },
-      WTI: { search: 'WTI-PHYSICAL', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
-      US500: { search: 'E-MINI S&P 500', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      US100: { search: 'NASDAQ MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      US30: { search: 'DJIA', exchange: 'CHICAGO BOARD OF TRADE' },
-      US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      DXY: { search: 'U.S. DOLLAR INDEX', exchange: 'ICE FUTURES U.S.', code: '098662' },
+      EUR: { search: 'EURO FX', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '099741' },
+      GBP: { search: 'BRITISH POUND', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '096742' },
+      JPY: { search: 'JAPANESE YEN', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '097741' },
+      AUD: { search: 'AUSTRALIAN DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '232741' },
+      CAD: { search: 'CANADIAN DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '090741' },
+      NZD: { search: 'NZ DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '112741' },
+      CHF: { search: 'SWISS FRANC', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '092741' },
+      XAU: { search: 'GOLD', exchange: 'COMMODITY EXCHANGE INC', code: '088691' },
+      XAG: { search: 'SILVER', exchange: 'COMMODITY EXCHANGE INC', code: '084691' },
+      WTI: { search: 'CRUDE OIL, LIGHT SWEET', exchange: 'NEW YORK MERCANTILE EXCHANGE', code: '067651' },
+      US500: { search: 'E-MINI S&P 500', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '13874A', exactMatch: 'E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE' },
+      US100: { search: 'NASDAQ MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '209742', exactMatch: 'NASDAQ MINI - CHICAGO MERCANTILE EXCHANGE' },
+      US30: { search: 'DJIA', exchange: 'CHICAGO BOARD OF TRADE' },  // Fixed - removed code, use simple search
+      US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '239742', exactMatch: 'RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE' },
     };
 
     // Data storage
@@ -262,88 +262,68 @@
       status.className = `status ${type}`;
     }
 
-    async function fetchContractData(apiUrl, id, config) {
+    async function fetchContractData(id, config) {
+      // Build query - use exactMatch first, then code, then search
+      let whereClause;
+      if (config.exactMatch) {
+        whereClause = `market_and_exchange_names = '${config.exactMatch}'`;
+      } else if (config.code) {
+        whereClause = `cftc_contract_market_code = '${config.code}'`;
+      } else {
+        whereClause = `market_and_exchange_names like '%${config.search}%' AND market_and_exchange_names like '%${config.exchange}%'`;
+      }
+      
       const query = new URLSearchParams({
-        '$where': `market_and_exchange_names like '%${config.search}%' AND market_and_exchange_names like '%${config.exchange}%'`,
+        '$where': whereClause,
         '$order': 'report_date_as_yyyy_mm_dd DESC',
         '$limit': '5'
       });
       
-      const url = `${apiUrl}?${query}`;
+      const url = `${API_FUTURES_ONLY}?${query}`;
+      console.log(`Fetching ${id}:`, url);
+      
       const response = await fetch(url);
       
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       
       let data = await response.json();
+      console.log(`${id} raw data:`, data);
       
-      if (config.exclude) {
-        data = data.filter(d => !d.market_and_exchange_names.includes(config.exclude));
+      // For Gold/Silver, exclude MICRO contracts
+      if (id === 'XAU' || id === 'XAG') {
+        data = data.filter(d => !d.market_and_exchange_names.includes('MICRO'));
       }
       
       if (data.length < 2) {
-        console.warn(`${id}: Not enough data points`);
+        console.warn(`${id}: Not enough data points (got ${data.length})`);
         return null;
       }
       
       const latest = data[0];
       const previous = data[1];
       
-      // Try to get change fields first
-      let longChange = parseInt(
-        latest.change_in_noncomm_long_all || 
-        latest.Change_in_NonComm_Long_All ||
-        0
-      );
-      let shortChange = parseInt(
-        latest.change_in_noncomm_short_all || 
-        latest.Change_in_NonComm_Short_All ||
-        0
-      );
+      console.log(`${id} contract name:`, latest.market_and_exchange_names);
       
-      // If change fields are 0 or missing, calculate from positions
-      if (longChange === 0 && shortChange === 0) {
-        const currentLong = parseInt(
-          latest.noncomm_positions_long_all || 
-          latest.NonComm_Positions_Long_All ||
-          latest.ncomm_positions_long_all ||
-          0
-        );
-        const currentShort = parseInt(
-          latest.noncomm_positions_short_all || 
-          latest.NonComm_Positions_Short_All ||
-          latest.ncomm_positions_short_all ||
-          0
-        );
-        const prevLong = parseInt(
-          previous.noncomm_positions_long_all || 
-          previous.NonComm_Positions_Long_All ||
-          previous.ncomm_positions_long_all ||
-          0
-        );
-        const prevShort = parseInt(
-          previous.noncomm_positions_short_all || 
-          previous.NonComm_Positions_Short_All ||
-          previous.ncomm_positions_short_all ||
-          0
-        );
-        
-        longChange = currentLong - prevLong;
-        shortChange = currentShort - prevShort;
-        
-        console.log(`${id} (calculated from positions):`, {
-          currentLong, prevLong, longChange,
-          currentShort, prevShort, shortChange,
-          net: longChange - shortChange
-        });
-      } else {
-        console.log(`${id} (from change fields):`, {
-          longChange, shortChange, net: longChange - shortChange
-        });
-      }
+      // Always calculate from positions for accuracy
+      const currentLong = parseInt(latest.noncomm_positions_long_all || 0);
+      const currentShort = parseInt(latest.noncomm_positions_short_all || 0);
+      const prevLong = parseInt(previous.noncomm_positions_long_all || 0);
+      const prevShort = parseInt(previous.noncomm_positions_short_all || 0);
+      
+      const longChange = currentLong - prevLong;
+      const shortChange = currentShort - prevShort;
+      const netChange = longChange - shortChange;
+      
+      console.log(`${id} calculation:`, {
+        currentLong, prevLong, longChange,
+        currentShort, prevShort, shortChange,
+        netChange
+      });
       
       return {
-        netChange: longChange - shortChange,
-        reportDate: latest.report_date_as_yyyy_mm_dd || latest.Report_Date_as_YYYY_MM_DD
+        netChange,
+        reportDate: latest.report_date_as_yyyy_mm_dd,
+        contractName: latest.market_and_exchange_names
       };
     }
 
@@ -357,21 +337,26 @@
       let latestDate = '';
       let successCount = 0;
       let errorCount = 0;
+      const errors = [];
 
       try {
-        const promises = Object.entries(CONTRACT_MAP).map(([id, config]) =>
-          fetchContractData(API_FUTURES_ONLY, id, config)
-            .then(result => {
-              if (result) {
-                futuresData[id] = result.netChange;
-                if (result.reportDate > latestDate) latestDate = result.reportDate;
-                successCount++;
-              }
-            })
-            .catch(err => { console.error(`Futures ${id}:`, err); errorCount++; })
-        );
-
-        await Promise.all(promises);
+        for (const [id, config] of Object.entries(CONTRACT_MAP)) {
+          try {
+            const result = await fetchContractData(id, config);
+            if (result) {
+              futuresData[id] = result.netChange;
+              if (result.reportDate > latestDate) latestDate = result.reportDate;
+              successCount++;
+              console.log(`✅ ${id}: ${result.netChange} (${result.contractName})`);
+            }
+          } catch (err) {
+            console.error(`❌ ${id}:`, err);
+            errors.push(id);
+            errorCount++;
+          }
+          // Small delay to avoid rate limiting
+          await new Promise(r => setTimeout(r, 100));
+        }
 
         reportDate = latestDate || reportDate;
         
@@ -384,7 +369,12 @@
           `Last fetched: ${new Date().toLocaleString()}`;
 
         updateUI();
-        showStatus(`Successfully updated! (${successCount} fetches, ${errorCount} errors)`, 'success');
+        
+        if (errorCount > 0) {
+          showStatus(`Updated ${successCount} contracts. Errors: ${errors.join(', ')}`, 'success');
+        } else {
+          showStatus(`Successfully updated all ${successCount} contracts!`, 'success');
+        }
 
       } catch (error) {
         console.error('Fetch error:', error);
