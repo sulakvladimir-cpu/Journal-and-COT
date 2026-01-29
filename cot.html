@@ -129,6 +129,7 @@
       <div class="tab active" onclick="showSection('all', this)">All</div>
       <div class="tab" onclick="showSection('currencies', this)">Currencies</div>
       <div class="tab" onclick="showSection('crosses', this)">Crosses</div>
+      <div class="tab" onclick="showSection('currencyfutures', this)">Currency Futures</div>
       <div class="tab" onclick="showSection('commodities', this)">Metals</div>
       <div class="tab" onclick="showSection('indices', this)">Indices</div>
       <div class="tab" onclick="showSection('energy', this)">Energy</div>
@@ -146,6 +147,11 @@
     <div id="crosses" class="section">
       <div class="section-title">🔄 Cross Pairs (Sorted by Strength)</div>
       <div class="grid" id="crosses-grid"></div>
+    </div>
+    
+    <div id="currencyfutures" class="section">
+      <div class="section-title">💵 Currency Futures (Raw Values)</div>
+      <div class="grid" id="currencyfutures-grid"></div>
     </div>
     
     <div id="commodities" class="section">
@@ -360,6 +366,16 @@
       crypto: [
         { pair: 'Bitcoin', base: 'BTC', quote: null },
         { pair: 'Ethereum', base: 'ETH', quote: null },
+      ],
+      currencyfutures: [
+        { pair: 'DXY', base: 'DXY', quote: null },
+        { pair: 'EUR', base: 'EUR', quote: null },
+        { pair: 'GBP', base: 'GBP', quote: null },
+        { pair: 'JPY', base: 'JPY', quote: null },
+        { pair: 'AUD', base: 'AUD', quote: null },
+        { pair: 'CAD', base: 'CAD', quote: null },
+        { pair: 'NZD', base: 'NZD', quote: null },
+        { pair: 'CHF', base: 'CHF', quote: null },
       ],
     };
 
@@ -616,6 +632,8 @@
         sortPairsByValue(pairs.currencies).map(createCard).join('');
       document.getElementById('crosses-grid').innerHTML = 
         sortPairsByValue(pairs.crosses).map(createCard).join('');
+      document.getElementById('currencyfutures-grid').innerHTML = 
+        sortPairsByValue(pairs.currencyfutures).map(createCard).join('');
       document.getElementById('commodities-grid').innerHTML = 
         sortPairsByValue(pairs.commodities).map(createCard).join('');
       document.getElementById('indices-grid').innerHTML = 
@@ -640,7 +658,7 @@
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       element.classList.add('active');
       
-      const sections = ['currencies', 'crosses', 'commodities', 'indices', 'energy', 'grains', 'softs', 'meats', 'crypto'];
+      const sections = ['currencies', 'crosses', 'currencyfutures', 'commodities', 'indices', 'energy', 'grains', 'softs', 'meats', 'crypto'];
       sections.forEach(s => {
         document.getElementById(s).classList.toggle('hidden', section !== 'all' && section !== s);
       });
