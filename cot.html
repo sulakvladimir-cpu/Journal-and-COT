@@ -132,6 +132,7 @@
     <div class="tabs">
       <div class="tab active" onclick="showSection('all', this)">All</div>
       <div class="tab" onclick="showSection('currencies', this)">💱 Currencies</div>
+      <div class="tab" onclick="showSection('crosses', this)">🔄 Crosses</div>
       <div class="tab" onclick="showSection('indices', this)">📈 Indices</div>
       <div class="tab" onclick="showSection('energy', this)">🛢️ Energy</div>
       <div class="tab" onclick="showSection('metals', this)">🥇 Metals</div>
@@ -144,6 +145,11 @@
     <div id="currencies" class="section">
       <div class="section-title">💱 Currencies</div>
       <div class="grid" id="currencies-grid"></div>
+    </div>
+    
+    <div id="crosses" class="section">
+      <div class="section-title">🔄 Cross Pairs (Calculated from Currency Positioning)</div>
+      <div class="grid" id="crosses-grid"></div>
     </div>
     
     <div id="indices" class="section">
@@ -260,6 +266,31 @@
     Object.keys(CONTRACT_MAP).forEach(id => futuresData[id] = 0);
     
     let reportDate = '';
+
+    // Cross pairs (calculated from base currencies)
+    const crossPairs = [
+      { pair: 'EUR/GBP', base: 'EUR', quote: 'GBP' },
+      { pair: 'EUR/JPY', base: 'EUR', quote: 'JPY' },
+      { pair: 'EUR/AUD', base: 'EUR', quote: 'AUD' },
+      { pair: 'EUR/CAD', base: 'EUR', quote: 'CAD' },
+      { pair: 'EUR/NZD', base: 'EUR', quote: 'NZD' },
+      { pair: 'EUR/CHF', base: 'EUR', quote: 'CHF' },
+      { pair: 'GBP/JPY', base: 'GBP', quote: 'JPY' },
+      { pair: 'GBP/AUD', base: 'GBP', quote: 'AUD' },
+      { pair: 'GBP/CAD', base: 'GBP', quote: 'CAD' },
+      { pair: 'GBP/NZD', base: 'GBP', quote: 'NZD' },
+      { pair: 'GBP/CHF', base: 'GBP', quote: 'CHF' },
+      { pair: 'AUD/JPY', base: 'AUD', quote: 'JPY' },
+      { pair: 'AUD/CAD', base: 'AUD', quote: 'CAD' },
+      { pair: 'AUD/NZD', base: 'AUD', quote: 'NZD' },
+      { pair: 'AUD/CHF', base: 'AUD', quote: 'CHF' },
+      { pair: 'NZD/JPY', base: 'NZD', quote: 'JPY' },
+      { pair: 'NZD/CAD', base: 'NZD', quote: 'CAD' },
+      { pair: 'NZD/CHF', base: 'NZD', quote: 'CHF' },
+      { pair: 'CAD/JPY', base: 'CAD', quote: 'JPY' },
+      { pair: 'CAD/CHF', base: 'CAD', quote: 'CHF' },
+      { pair: 'CHF/JPY', base: 'CHF', quote: 'JPY' },
+    ];
 
     function loadSavedData() {
       const saved = localStorage.getItem('cot-all-markets-v1');
@@ -444,6 +475,35 @@
       `;
     }
 
+    function calculateCrossValue(cross) {
+      const baseVal = futuresData[cross.base] || 0;
+      const quoteVal = futuresData[cross.quote] || 0;
+      return baseVal - quoteVal;
+    }
+
+    function createCrossCard(cross) {
+      const value = calculateCrossValue(cross);
+      const sentiment = getSentimentLabel(value);
+      const maxVal = 50000;
+      const barWidth = Math.min(Math.abs(value) / maxVal * 100, 100);
+      
+      return `
+        <div class="card">
+          <div class="card-header">
+            <span class="pair-name">${cross.pair}</span>
+            <span class="sentiment ${sentiment.class}">${sentiment.label}</span>
+          </div>
+          <div class="value-box">
+            <div class="value-label">📊 Net Change</div>
+            <div class="value-number ${value >= 0 ? 'positive' : 'negative'}">${formatNumber(value)}</div>
+            <div class="bar-container">
+              <div class="bar ${value >= 0 ? 'positive' : 'negative'}" style="width: ${barWidth}%"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     function getContractsByCategory(category) {
       return Object.entries(CONTRACT_MAP)
         .filter(([id, config]) => config.category === category)
@@ -463,13 +523,20 @@
           grid.innerHTML = contracts.map(createCard).join('');
         }
       });
+
+      // Update crosses grid (sorted by value)
+      const crossesGrid = document.getElementById('crosses-grid');
+      if (crossesGrid) {
+        const sortedCrosses = [...crossPairs].sort((a, b) => calculateCrossValue(b) - calculateCrossValue(a));
+        crossesGrid.innerHTML = sortedCrosses.map(createCrossCard).join('');
+      }
     }
 
     function showSection(section, element) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       element.classList.add('active');
       
-      const sections = ['currencies', 'indices', 'energy', 'metals', 'grains', 'softs', 'meats', 'crypto'];
+      const sections = ['currencies', 'crosses', 'indices', 'energy', 'metals', 'grains', 'softs', 'meats', 'crypto'];
       sections.forEach(s => {
         document.getElementById(s).classList.toggle('hidden', section !== 'all' && section !== s);
       });
