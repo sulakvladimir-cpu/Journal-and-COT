@@ -239,6 +239,7 @@ tr:hover{background:rgba(255,255,255,.02)}
 <button class="tab" onclick="showTab('pairanalysis')">🔬 Pair Analysis</button>
 <button class="tab" onclick="showTab('checklist')">✅ Quality Scorer</button>
 <button class="tab" onclick="showTab('tradingplan')">📝 Trading Plan</button>
+<button class="tab" onclick="showTab('seasonality')">🗓️ Seasonality</button>
 <button class="tab" onclick="showTab('gallery')">🖼️ Screenshots</button>
 <button class="tab" onclick="showTab('customize')">🎨 Customize</button>
 </div>
@@ -577,6 +578,63 @@ tr:hover{background:rgba(255,255,255,.02)}
 </div>
 </div>
 
+<!-- SEASONALITY SECTION -->
+<div id="seasonality" class="tab-content">
+<div class="card">
+<div class="card-header">
+<h3>🗓️ Seasonal Tendencies</h3>
+<div style="display:flex;gap:10px;align-items:center">
+<select id="seasonalityMonth" class="filter-select" onchange="filterSeasonality()">
+<option value="">All Months</option>
+<option value="1">January</option>
+<option value="2">February</option>
+<option value="3">March</option>
+<option value="4">April</option>
+<option value="5">May</option>
+<option value="6">June</option>
+<option value="7">July</option>
+<option value="8">August</option>
+<option value="9">September</option>
+<option value="10">October</option>
+<option value="11">November</option>
+<option value="12">December</option>
+</select>
+<select id="seasonalityCategory" class="filter-select" onchange="filterSeasonality()">
+<option value="">All Categories</option>
+<option value="indices">Indices</option>
+<option value="forex">Forex</option>
+<option value="metals">Metals</option>
+<option value="energy">Energy</option>
+<option value="agriculture">Agriculture</option>
+<option value="crypto">Crypto</option>
+</select>
+<button class="btn btn-secondary" onclick="openAddSeasonalModal()">+ Add Custom</button>
+</div>
+</div>
+<div class="card-body">
+<p style="color:var(--text2);margin-bottom:20px">Historical seasonal patterns based on decades of market data. Use as confluence, not as standalone signals!</p>
+
+<!-- CURRENT MONTH HIGHLIGHT -->
+<div id="currentMonthSeasonals" style="margin-bottom:30px"></div>
+
+<!-- ALL SEASONALS BY MONTH -->
+<div id="seasonalityGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:20px"></div>
+
+</div>
+</div>
+</div>
+
+<!-- ADD SEASONAL MODAL -->
+<div class="modal" id="addSeasonalModal"><div class="modal-content" style="max-width:500px"><div class="modal-header"><h3>➕ Add Custom Seasonal</h3><button class="modal-close" onclick="closeModal('addSeasonalModal')">×</button></div><div class="modal-body">
+<div class="form-group" style="margin-bottom:15px"><label>Instrument</label><input type="text" id="seasonalInstrument" placeholder="e.g., XAUUSD, Sugar, SPX" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+<div class="form-group" style="margin-bottom:15px"><label>Month(s)</label><input type="text" id="seasonalMonths" placeholder="e.g., December or Nov-Jan" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+<div class="form-group" style="margin-bottom:15px"><label>Direction</label><select id="seasonalDirection" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option value="bullish">🟢 Bullish</option><option value="bearish">🔴 Bearish</option></select></div>
+<div class="form-group" style="margin-bottom:15px"><label>Win Rate %</label><input type="number" id="seasonalWinRate" placeholder="e.g., 75" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+<div class="form-group" style="margin-bottom:15px"><label>Category</label><select id="seasonalCategory" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option value="indices">Indices</option><option value="forex">Forex</option><option value="metals">Metals</option><option value="energy">Energy</option><option value="agriculture">Agriculture</option><option value="crypto">Crypto</option></select></div>
+<div class="form-group" style="margin-bottom:15px"><label>Description</label><textarea id="seasonalDescription" placeholder="e.g., Santa Claus Rally - last 5 trading days + first 2 of new year" style="width:100%;min-height:80px;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></textarea></div>
+<div style="display:flex;gap:10px"><button class="btn btn-primary" onclick="saveCustomSeasonal()">💾 Save</button><button class="btn btn-secondary" onclick="closeModal('addSeasonalModal')">Cancel</button></div>
+</div></div></div>
+
 <div id="gallery" class="tab-content">
 <div class="card"><div class="card-header"><h3>🖼️ Screenshots</h3><select class="filter-select" id="galleryFilter" onchange="updateGallery()"><option value="">All</option><option value="Win">Wins</option><option value="Loss">Losses</option></select></div>
 <div class="card-body"><div class="gallery-grid" id="galleryGrid"></div></div></div>
@@ -900,7 +958,7 @@ let currentAccount='all';
 let settings=JSON.parse(localStorage.getItem('sdSettings'))||{limit:200,risk:50,account:10000};
 let charts={},currentMonth=new Date();
 
-document.addEventListener('DOMContentLoaded',function(){loadSettings();setDefaultDate();updateAccountSelectors();updateStrategySelectors();setupZoneScoreListeners();updateStorageIndicator();buildCustomLists();rebuildFormSelects();initQualityScorer();loadTradingPlan();updateAll()});
+document.addEventListener('DOMContentLoaded',function(){loadSettings();setDefaultDate();updateAccountSelectors();updateStrategySelectors();setupZoneScoreListeners();updateStorageIndicator();buildCustomLists();rebuildFormSelects();initQualityScorer();loadTradingPlan();renderSeasonality();updateAll()});
 
 function updateStorageIndicator(){
 var used=getStorageUsage();
@@ -2032,6 +2090,197 @@ showToast('Checklist saved!');
 }
 
 // ============================================
+// SEASONALITY DATA & FUNCTIONS
+// ============================================
+var defaultSeasonals=[
+// INDICES - Santa Claus Rally & January Effect
+{instrument:'S&P 500',months:[12],monthNames:'December',direction:'bullish',winRate:75,category:'indices',description:'Santa Claus Rally - Last 5 trading days of Dec + first 2 of Jan. Since 1950: +1.3% avg'},
+{instrument:'S&P 500',months:[1],monthNames:'January',direction:'bullish',winRate:62,category:'indices',description:'January Effect - Small caps outperform. First 5 days often predict the year'},
+{instrument:'S&P 500',months:[10],monthNames:'October',direction:'bearish',winRate:55,category:'indices',description:'October Effect - Historically volatile, many crashes occurred (1929, 1987, 2008)'},
+{instrument:'S&P 500',months:[5,6,7,8,9],monthNames:'May-September',direction:'bearish',winRate:65,category:'indices',description:'Sell in May - Summer months historically weaker. "Sell in May and go away"'},
+{instrument:'S&P 500',months:[11,12,1,2,3,4],monthNames:'November-April',direction:'bullish',winRate:70,category:'indices',description:'Best 6 Months - Nov-Apr historically strongest period for stocks'},
+{instrument:'Nasdaq',months:[12],monthNames:'December',direction:'bullish',winRate:72,category:'indices',description:'Tech Rally - End of year tech buying, tax-loss harvesting rebound'},
+{instrument:'Nasdaq',months:[9],monthNames:'September',direction:'bearish',winRate:60,category:'indices',description:'September Swoon - Historically worst month for Nasdaq'},
+{instrument:'DAX',months:[12],monthNames:'December',direction:'bullish',winRate:70,category:'indices',description:'German year-end rally, follows US Santa Claus pattern'},
+{instrument:'Nikkei',months:[4],monthNames:'April',direction:'bullish',winRate:65,category:'indices',description:'Japanese fiscal year starts April - new money inflows'},
+
+// FOREX
+{instrument:'EURUSD',months:[1],monthNames:'January',direction:'bullish',winRate:60,category:'forex',description:'Euro strength - Repatriation flows after year-end'},
+{instrument:'EURUSD',months:[8],monthNames:'August',direction:'bearish',winRate:58,category:'forex',description:'Summer doldrums - Low liquidity, EUR weakness'},
+{instrument:'USDJPY',months:[3],monthNames:'March',direction:'bearish',winRate:62,category:'forex',description:'Japanese fiscal year-end repatriation - Yen strength'},
+{instrument:'USDJPY',months:[12],monthNames:'December',direction:'bullish',winRate:58,category:'forex',description:'Year-end dollar demand'},
+{instrument:'GBPUSD',months:[4],monthNames:'April',direction:'bullish',winRate:57,category:'forex',description:'UK tax year end flows'},
+{instrument:'AUDUSD',months:[2,3],monthNames:'Feb-March',direction:'bearish',winRate:60,category:'forex',description:'Aussie weakness - Post-harvest, China slowdown'},
+{instrument:'USDCAD',months:[6,7],monthNames:'June-July',direction:'bearish',winRate:58,category:'forex',description:'Canadian dollar strength - Oil demand, summer driving'},
+{instrument:'DXY',months:[1],monthNames:'January',direction:'bearish',winRate:55,category:'forex',description:'Dollar Index weakness - Risk-on start of year'},
+{instrument:'DXY',months:[9],monthNames:'September',direction:'bullish',winRate:60,category:'forex',description:'Dollar strength - Risk-off, flight to safety'},
+
+// METALS
+{instrument:'XAUUSD',months:[1,2],monthNames:'January-February',direction:'bullish',winRate:65,category:'metals',description:'Gold Chinese New Year - Jewelry demand, Asian buying'},
+{instrument:'XAUUSD',months:[8,9],monthNames:'August-September',direction:'bullish',winRate:68,category:'metals',description:'Gold Indian Wedding Season - Massive jewelry demand'},
+{instrument:'XAUUSD',months:[12],monthNames:'December',direction:'bullish',winRate:62,category:'metals',description:'Gold Santa Rally - Safe haven + jewelry demand'},
+{instrument:'XAUUSD',months:[3],monthNames:'March',direction:'bearish',winRate:55,category:'metals',description:'Gold post-CNY correction - Demand drops after festivals'},
+{instrument:'XAGUSD',months:[12,1,2],monthNames:'Dec-February',direction:'bullish',winRate:60,category:'metals',description:'Silver follows gold seasonal + industrial demand'},
+{instrument:'XAGUSD',months:[6],monthNames:'June',direction:'bearish',winRate:58,category:'metals',description:'Silver summer weakness'},
+{instrument:'Copper',months:[1,2,3],monthNames:'Jan-March',direction:'bullish',winRate:62,category:'metals',description:'Copper China construction season restocking'},
+{instrument:'Copper',months:[8],monthNames:'August',direction:'bearish',winRate:55,category:'metals',description:'Copper summer slowdown'},
+{instrument:'Platinum',months:[4,5],monthNames:'April-May',direction:'bullish',winRate:58,category:'metals',description:'Platinum auto industry demand peak'},
+
+// ENERGY
+{instrument:'Crude Oil',months:[2,3,4],monthNames:'Feb-April',direction:'bullish',winRate:65,category:'energy',description:'Oil refinery maintenance ends, summer driving prep'},
+{instrument:'Crude Oil',months:[6,7,8],monthNames:'June-August',direction:'bullish',winRate:62,category:'energy',description:'Oil summer driving season - Peak gasoline demand'},
+{instrument:'Crude Oil',months:[9,10],monthNames:'Sept-October',direction:'bearish',winRate:58,category:'energy',description:'Oil post-summer weakness, hurricane disruptions'},
+{instrument:'Crude Oil',months:[12],monthNames:'December',direction:'bearish',winRate:55,category:'energy',description:'Oil year-end weakness - Tax selling, lower demand'},
+{instrument:'Natural Gas',months:[10,11],monthNames:'Oct-November',direction:'bullish',winRate:70,category:'energy',description:'Nat Gas heating season begins - Winter demand surge'},
+{instrument:'Natural Gas',months:[1,2],monthNames:'Jan-February',direction:'bullish',winRate:65,category:'energy',description:'Nat Gas peak winter - Cold weather spikes'},
+{instrument:'Natural Gas',months:[4,5],monthNames:'April-May',direction:'bearish',winRate:68,category:'energy',description:'Nat Gas shoulder season - Post-winter selloff'},
+{instrument:'Gasoline',months:[3,4,5],monthNames:'March-May',direction:'bullish',winRate:72,category:'energy',description:'Gasoline refinery switch to summer blend + driving season prep'},
+{instrument:'Heating Oil',months:[9,10,11],monthNames:'Sept-November',direction:'bullish',winRate:65,category:'energy',description:'Heating oil winter prep buying'},
+
+// AGRICULTURE
+{instrument:'Sugar',months:[11,12],monthNames:'November-December',direction:'bearish',winRate:68,category:'agriculture',description:'Sugar Brazil harvest peaks - Maximum supply pressure'},
+{instrument:'Sugar',months:[2,3,4],monthNames:'Feb-April',direction:'bullish',winRate:62,category:'agriculture',description:'Sugar inter-harvest period - Supply tightens'},
+{instrument:'Coffee',months:[6,7],monthNames:'June-July',direction:'bullish',winRate:65,category:'agriculture',description:'Coffee Brazil frost risk - Winter in Southern hemisphere'},
+{instrument:'Coffee',months:[12],monthNames:'December',direction:'bearish',winRate:58,category:'agriculture',description:'Coffee Brazil harvest arrives'},
+{instrument:'Cocoa',months:[2,3],monthNames:'Feb-March',direction:'bearish',winRate:60,category:'agriculture',description:'Cocoa West Africa main crop harvest'},
+{instrument:'Cocoa',months:[7,8],monthNames:'July-August',direction:'bullish',winRate:58,category:'agriculture',description:'Cocoa mid-crop shortage period'},
+{instrument:'Corn',months:[6,7],monthNames:'June-July',direction:'bullish',winRate:70,category:'agriculture',description:'Corn weather market - Pollination crucial, drought risk'},
+{instrument:'Corn',months:[10,11],monthNames:'Oct-November',direction:'bearish',winRate:72,category:'agriculture',description:'Corn harvest pressure - Maximum supply'},
+{instrument:'Soybeans',months:[7,8],monthNames:'July-August',direction:'bullish',winRate:68,category:'agriculture',description:'Soybeans weather premium - Pod-filling stage critical'},
+{instrument:'Soybeans',months:[10],monthNames:'October',direction:'bearish',winRate:65,category:'agriculture',description:'Soybeans US harvest pressure'},
+{instrument:'Wheat',months:[5,6],monthNames:'May-June',direction:'bullish',winRate:60,category:'agriculture',description:'Wheat weather market - US winter wheat stress'},
+{instrument:'Wheat',months:[7,8],monthNames:'July-August',direction:'bearish',winRate:65,category:'agriculture',description:'Wheat Northern hemisphere harvest'},
+{instrument:'Cotton',months:[7,8],monthNames:'July-August',direction:'bullish',winRate:62,category:'agriculture',description:'Cotton weather market - Texas drought risk'},
+{instrument:'Cotton',months:[11,12],monthNames:'Nov-December',direction:'bearish',winRate:58,category:'agriculture',description:'Cotton harvest complete, supply peaks'},
+{instrument:'OJ (Orange Juice)',months:[12,1,2],monthNames:'Dec-February',direction:'bullish',winRate:72,category:'agriculture',description:'OJ Florida freeze risk - Cold weather spikes'},
+{instrument:'Cattle',months:[1,2,3],monthNames:'Jan-March',direction:'bullish',winRate:60,category:'agriculture',description:'Cattle grilling season prep, tight supplies'},
+{instrument:'Lean Hogs',months:[6,7],monthNames:'June-July',direction:'bullish',winRate:58,category:'agriculture',description:'Hogs summer grilling demand'},
+
+// CRYPTO
+{instrument:'Bitcoin',months:[10,11,12],monthNames:'Oct-December',direction:'bullish',winRate:75,category:'crypto',description:'Bitcoin Q4 historically strongest - "Uptober", year-end rally'},
+{instrument:'Bitcoin',months:[1],monthNames:'January',direction:'bearish',winRate:58,category:'crypto',description:'Bitcoin January dump - Post-rally correction, tax selling'},
+{instrument:'Bitcoin',months:[4],monthNames:'April',direction:'bullish',winRate:65,category:'crypto',description:'Bitcoin halving anticipation (every 4 years) + tax refund flows'},
+{instrument:'Bitcoin',months:[9],monthNames:'September',direction:'bearish',winRate:62,category:'crypto',description:'Bitcoin "Septembear" - Historically weak month'},
+{instrument:'Ethereum',months:[11,12],monthNames:'Nov-December',direction:'bullish',winRate:70,category:'crypto',description:'Ethereum follows BTC Q4 rally + DeFi activity'},
+{instrument:'Ethereum',months:[5,6],monthNames:'May-June',direction:'bearish',winRate:55,category:'crypto',description:'Ethereum "Sell in May" applies to crypto too'}
+];
+
+var customSeasonals=JSON.parse(localStorage.getItem('sdCustomSeasonals'))||[];
+
+function getAllSeasonals(){
+return defaultSeasonals.concat(customSeasonals);
+}
+
+function renderSeasonality(){
+var month=parseInt(document.getElementById('seasonalityMonth').value)||0;
+var category=document.getElementById('seasonalityCategory').value;
+var all=getAllSeasonals();
+
+// Filter
+var filtered=all.filter(function(s){
+if(month&&s.months.indexOf(month)===-1)return false;
+if(category&&s.category!==category)return false;
+return true;
+});
+
+// Current month highlight
+var currentMonth=new Date().getMonth()+1;
+var currentSeasonals=all.filter(function(s){return s.months.indexOf(currentMonth)!==-1});
+var currentDiv=document.getElementById('currentMonthSeasonals');
+var monthNames=['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+if(currentSeasonals.length&&!month){
+currentDiv.innerHTML='<div style="background:linear-gradient(135deg,var(--bg2),var(--bg3));border-radius:12px;padding:20px;border:2px solid var(--gold)"><h3 style="color:var(--gold);margin-bottom:15px">🔥 Active This Month ('+monthNames[currentMonth]+')</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">'+
+currentSeasonals.map(function(s){
+return '<div style="background:var(--bg1);padding:12px;border-radius:8px;border-left:4px solid '+(s.direction==='bullish'?'var(--green)':'var(--red)')+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><strong>'+s.instrument+'</strong><span style="padding:3px 8px;border-radius:4px;font-size:.75rem;background:'+(s.direction==='bullish'?'rgba(0,200,83,0.2);color:var(--green)':'rgba(255,23,68,0.2);color:var(--red)')+'">'+(s.direction==='bullish'?'🟢 BULLISH':'🔴 BEARISH')+'</span></div><div style="font-size:.8rem;color:var(--text2)">'+s.winRate+'% historical win rate</div></div>'
+}).join('')+'</div></div>';
+}else{
+currentDiv.innerHTML='';
+}
+
+// All seasonals grid grouped by category
+var grid=document.getElementById('seasonalityGrid');
+var categories={indices:'📊 Indices',forex:'💱 Forex',metals:'🥇 Metals',energy:'⛽ Energy',agriculture:'🌾 Agriculture',crypto:'₿ Crypto'};
+
+if(!filtered.length){
+grid.innerHTML='<p style="color:var(--text2);text-align:center;padding:40px;grid-column:1/-1">No seasonals match your filters</p>';
+return;
+}
+
+var grouped={};
+filtered.forEach(function(s){
+if(!grouped[s.category])grouped[s.category]=[];
+grouped[s.category].push(s);
+});
+
+var html='';
+Object.keys(grouped).forEach(function(cat){
+html+='<div style="background:var(--bg2);border-radius:12px;padding:20px"><h4 style="color:var(--gold);margin-bottom:15px">'+(categories[cat]||cat)+'</h4>';
+grouped[cat].forEach(function(s){
+html+='<div style="background:var(--bg3);padding:12px;border-radius:8px;margin-bottom:10px;border-left:4px solid '+(s.direction==='bullish'?'var(--green)':'var(--red)')+'">';
+html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+html+='<strong>'+s.instrument+'</strong>';
+html+='<span style="padding:3px 8px;border-radius:4px;font-size:.75rem;background:'+(s.direction==='bullish'?'rgba(0,200,83,0.2);color:var(--green)':'rgba(255,23,68,0.2);color:var(--red)')+'">'+(s.direction==='bullish'?'🟢 LONG':'🔴 SHORT')+'</span>';
+html+='</div>';
+html+='<div style="font-size:.85rem;color:var(--gold);margin-bottom:4px">📅 '+s.monthNames+' • '+s.winRate+'% win rate</div>';
+html+='<div style="font-size:.8rem;color:var(--text2)">'+s.description+'</div>';
+html+='</div>';
+});
+html+='</div>';
+});
+
+grid.innerHTML=html;
+}
+
+function filterSeasonality(){
+renderSeasonality();
+}
+
+function openAddSeasonalModal(){
+document.getElementById('seasonalInstrument').value='';
+document.getElementById('seasonalMonths').value='';
+document.getElementById('seasonalDirection').value='bullish';
+document.getElementById('seasonalWinRate').value='';
+document.getElementById('seasonalCategory').value='indices';
+document.getElementById('seasonalDescription').value='';
+openModal('addSeasonalModal');
+}
+
+function saveCustomSeasonal(){
+var instrument=document.getElementById('seasonalInstrument').value.trim();
+var monthsStr=document.getElementById('seasonalMonths').value.trim();
+if(!instrument||!monthsStr){showToast('Fill instrument and months','error');return}
+
+// Parse months
+var monthMap={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,
+january:1,february:2,march:3,april:4,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+var months=[];
+monthsStr.toLowerCase().split(/[,\-\s]+/).forEach(function(m){
+if(monthMap[m])months.push(monthMap[m]);
+else if(parseInt(m)>=1&&parseInt(m)<=12)months.push(parseInt(m));
+});
+
+if(!months.length){showToast('Invalid months format','error');return}
+
+var seasonal={
+instrument:instrument,
+months:months,
+monthNames:monthsStr,
+direction:document.getElementById('seasonalDirection').value,
+winRate:parseInt(document.getElementById('seasonalWinRate').value)||50,
+category:document.getElementById('seasonalCategory').value,
+description:document.getElementById('seasonalDescription').value,
+custom:true
+};
+
+customSeasonals.push(seasonal);
+localStorage.setItem('sdCustomSeasonals',JSON.stringify(customSeasonals));
+closeModal('addSeasonalModal');
+renderSeasonality();
+showToast('Custom seasonal added!');
+}
+
+// ============================================
 // TRADING PLAN FUNCTIONS
 // ============================================
 var tradingPlan=JSON.parse(localStorage.getItem('sdTradingPlan'))||{};
@@ -2560,7 +2809,7 @@ document.getElementById('tradeMistakes').value=selected.join(',')}
 // PASSWORD PROTECTION
 // ============================================
 // CHANGE THIS PASSWORD TO YOUR OWN!
-var APP_PASSWORD = 'Swingelite1313-';
+var APP_PASSWORD = 'trading123';
 
 function checkPassword(){
 var input=document.getElementById('passwordInput').value;
