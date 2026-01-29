@@ -1,3 +1,8 @@
+cot.html
+20.23 KB•487 lines
+•
+Formatting may be inconsistent from source
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -131,60 +136,30 @@
       <div class="tab" onclick="showSection('crosses', this)">Crosses</div>
       <div class="tab" onclick="showSection('commodities', this)">Commodities</div>
       <div class="tab" onclick="showSection('indices', this)">Indices</div>
-      <div class="tab" onclick="showSection('energy', this)">Energy</div>
-      <div class="tab" onclick="showSection('grains', this)">Grains</div>
-      <div class="tab" onclick="showSection('softs', this)">Softs</div>
-      <div class="tab" onclick="showSection('meats', this)">Meats</div>
-      <div class="tab" onclick="showSection('crypto', this)">Crypto</div>
     </div>
     
     <div id="currencies" class="section">
-      <div class="section-title">💱 Major Currency Pairs (Sorted by Strength)</div>
+      <div class="section-title">💱 Major Currency Pairs</div>
       <div class="grid" id="currency-grid"></div>
     </div>
     
     <div id="crosses" class="section">
-      <div class="section-title">🔄 Cross Pairs (Sorted by Strength)</div>
+      <div class="section-title">🔄 Cross Pairs</div>
       <div class="grid" id="crosses-grid"></div>
     </div>
     
     <div id="commodities" class="section">
-      <div class="section-title">🛢️ Commodities (Sorted by Strength)</div>
+      <div class="section-title">🛢️ Commodities</div>
       <div class="grid" id="commodities-grid"></div>
     </div>
     
     <div id="indices" class="section">
-      <div class="section-title">📈 Indices (Sorted by Strength)</div>
+      <div class="section-title">📈 Indices</div>
       <div class="grid" id="indices-grid"></div>
     </div>
     
-    <div id="energy" class="section">
-      <div class="section-title">⛽ Energy (Sorted by Strength)</div>
-      <div class="grid" id="energy-grid"></div>
-    </div>
-    
-    <div id="grains" class="section">
-      <div class="section-title">🌾 Grains (Sorted by Strength)</div>
-      <div class="grid" id="grains-grid"></div>
-    </div>
-    
-    <div id="softs" class="section">
-      <div class="section-title">☕ Softs (Sorted by Strength)</div>
-      <div class="grid" id="softs-grid"></div>
-    </div>
-    
-    <div id="meats" class="section">
-      <div class="section-title">🥩 Meats (Sorted by Strength)</div>
-      <div class="grid" id="meats-grid"></div>
-    </div>
-    
-    <div id="crypto" class="section">
-      <div class="section-title">₿ Crypto (Sorted by Strength)</div>
-      <div class="grid" id="crypto-grid"></div>
-    </div>
-    
     <div class="base-contracts">
-      <div class="section-title">📋 Raw Net Position Changes - Sorted Most Bullish → Most Bearish</div>
+      <div class="section-title">📋 Raw Net Position Changes (Contracts)</div>
       <div class="base-grid" id="base-grid"></div>
     </div>
     
@@ -198,7 +173,7 @@
     // CFTC API Endpoint - Futures Only
     const API_FUTURES_ONLY = 'https://publicreporting.cftc.gov/resource/6dca-aqww.json';
     
-    // Contract mappings - Using simple search terms from working script
+    // Contract mappings - Added DXY (USD Index)
     const CONTRACT_MAP = {
       DXY: { search: 'U.S. DOLLAR INDEX', exchange: 'ICE FUTURES U.S.' },
       EUR: { search: 'EURO FX', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
@@ -215,41 +190,12 @@
       US100: { search: 'NASDAQ MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
       US30: { search: 'DJIA', exchange: 'CHICAGO BOARD OF TRADE' },
       US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      // Energy
-      BRENT: { search: 'BRENT LAST DAY', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
-      NATGAS: { search: 'NATURAL GAS', exchange: 'NEW YORK MERCANTILE EXCHANGE', exclude: 'MINI' },
-      HEATING: { search: 'NY HARBOR ULSD', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
-      RBOB: { search: 'RBOB GASOLINE', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
-      // Grains
-      CORN: { search: 'CORN', exchange: 'CHICAGO BOARD OF TRADE', exclude: 'MINI' },
-      WHEAT: { search: 'WHEAT-SRW', exchange: 'CHICAGO BOARD OF TRADE', exclude: 'MINI' },
-      SOYBEANS: { search: 'SOYBEANS', exchange: 'CHICAGO BOARD OF TRADE', exclude: 'MINI' },
-      SOYOIL: { search: 'SOYBEAN OIL', exchange: 'CHICAGO BOARD OF TRADE' },
-      SOYMEAL: { search: 'SOYBEAN MEAL', exchange: 'CHICAGO BOARD OF TRADE' },
-      // Softs
-      COFFEE: { search: 'COFFEE C', exchange: 'ICE FUTURES U.S.' },
-      SUGAR: { search: 'SUGAR NO. 11', exchange: 'ICE FUTURES U.S.' },
-      COTTON: { search: 'COTTON NO. 2', exchange: 'ICE FUTURES U.S.' },
-      COCOA: { search: 'COCOA', exchange: 'ICE FUTURES U.S.' },
-      OJ: { search: 'FRZN CONCENTRATED ORANGE JUICE', exchange: 'ICE FUTURES U.S.' },
-      // Meats
-      CATTLE: { search: 'LIVE CATTLE', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      FEEDER: { search: 'FEEDER CATTLE', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      HOGS: { search: 'LEAN HOGS', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
-      // Crypto
-      BTC: { search: 'BITCOIN', exchange: 'CHICAGO MERCANTILE EXCHANGE', exclude: 'MICRO' },
-      ETH: { search: 'ETHER', exchange: 'CHICAGO MERCANTILE EXCHANGE', exclude: 'MICRO' },
     };
 
-    // Data storage
+    // Data storage - Futures only (added DXY)
     let futuresData = {
       DXY: 0, EUR: 0, GBP: 0, JPY: 0, AUD: 0, CAD: 0, NZD: 0, CHF: 0,
       XAU: 0, XAG: 0, WTI: 0, US500: 0, US100: 0, US30: 0, US2000: 0,
-      BRENT: 0, NATGAS: 0, HEATING: 0, RBOB: 0,
-      CORN: 0, WHEAT: 0, SOYBEANS: 0, SOYOIL: 0, SOYMEAL: 0,
-      COFFEE: 0, SUGAR: 0, COTTON: 0, COCOA: 0, OJ: 0,
-      CATTLE: 0, FEEDER: 0, HOGS: 0,
-      BTC: 0, ETH: 0,
     };
     
     let reportDate = '';
@@ -298,41 +244,11 @@
         { pair: 'US100', base: 'US100', quote: null },
         { pair: 'US30', base: 'US30', quote: null },
         { pair: 'US2000', base: 'US2000', quote: null },
-      ],
-      energy: [
-        { pair: 'WTI Crude', base: 'WTI', quote: null },
-        { pair: 'Brent Crude', base: 'BRENT', quote: null },
-        { pair: 'Natural Gas', base: 'NATGAS', quote: null },
-        { pair: 'Heating Oil', base: 'HEATING', quote: null },
-        { pair: 'RBOB Gasoline', base: 'RBOB', quote: null },
-      ],
-      grains: [
-        { pair: 'Corn', base: 'CORN', quote: null },
-        { pair: 'Wheat', base: 'WHEAT', quote: null },
-        { pair: 'Soybeans', base: 'SOYBEANS', quote: null },
-        { pair: 'Soybean Oil', base: 'SOYOIL', quote: null },
-        { pair: 'Soybean Meal', base: 'SOYMEAL', quote: null },
-      ],
-      softs: [
-        { pair: 'Coffee', base: 'COFFEE', quote: null },
-        { pair: 'Sugar', base: 'SUGAR', quote: null },
-        { pair: 'Cotton', base: 'COTTON', quote: null },
-        { pair: 'Cocoa', base: 'COCOA', quote: null },
-        { pair: 'Orange Juice', base: 'OJ', quote: null },
-      ],
-      meats: [
-        { pair: 'Live Cattle', base: 'CATTLE', quote: null },
-        { pair: 'Feeder Cattle', base: 'FEEDER', quote: null },
-        { pair: 'Lean Hogs', base: 'HOGS', quote: null },
-      ],
-      crypto: [
-        { pair: 'Bitcoin', base: 'BTC', quote: null },
-        { pair: 'Ethereum', base: 'ETH', quote: null },
       ]
     };
 
     function loadSavedData() {
-      const saved = localStorage.getItem('cot-dashboard-v3-fixed');
+      const saved = localStorage.getItem('cot-dashboard-futures-only-v2');
       if (saved) {
         const parsed = JSON.parse(saved);
         futuresData = parsed.futuresData || futuresData;
@@ -464,7 +380,7 @@
 
         reportDate = latestDate || reportDate;
         
-        localStorage.setItem('cot-dashboard-v3-fixed', JSON.stringify({
+        localStorage.setItem('cot-dashboard-futures-only-v2', JSON.stringify({
           futuresData, reportDate,
           fetchedAt: new Date().toISOString()
         }));
@@ -485,7 +401,7 @@
     }
 
     function clearCache() {
-      localStorage.removeItem('cot-dashboard-v3-fixed');
+      localStorage.removeItem('cot-dashboard-futures-only-v2');
       location.reload();
     }
 
@@ -493,6 +409,7 @@
       const baseVal = futuresData[pair.base] || 0;
       const quoteVal = pair.quote ? (futuresData[pair.quote] || 0) : 0;
       
+      // DXY and other standalone contracts
       if (!pair.quote) return baseVal;
       if (pair.quote === 'USD') return baseVal;
       if (pair.base === 'USD') return -quoteVal;
@@ -532,16 +449,12 @@
       `;
     }
 
-    function createBaseCard(id, value) {
+    function createBaseCard(id) {
+      const value = futuresData[id] || 0;
       const names = {
         DXY: 'USD Index', EUR: 'Euro', GBP: 'Pound', JPY: 'Yen', AUD: 'Aussie', CAD: 'Loonie',
         NZD: 'Kiwi', CHF: 'Franc', XAU: 'Gold', XAG: 'Silver', WTI: 'Oil',
-        US500: 'S&P 500', US100: 'Nasdaq', US30: 'Dow', US2000: 'Russell',
-        BRENT: 'Brent', NATGAS: 'Nat Gas', HEATING: 'Heat Oil', RBOB: 'Gasoline',
-        CORN: 'Corn', WHEAT: 'Wheat', SOYBEANS: 'Soybeans', SOYOIL: 'Soy Oil', SOYMEAL: 'Soy Meal',
-        COFFEE: 'Coffee', SUGAR: 'Sugar', COTTON: 'Cotton', COCOA: 'Cocoa', OJ: 'OJ',
-        CATTLE: 'Cattle', FEEDER: 'Feeder', HOGS: 'Hogs',
-        BTC: 'Bitcoin', ETH: 'Ethereum'
+        US500: 'S&P 500', US100: 'Nasdaq', US30: 'Dow', US2000: 'Russell'
       };
       return `
         <div class="base-card">
@@ -552,55 +465,20 @@
       `;
     }
 
-    // Sort pairs by calculated value (most positive to most negative)
-    function sortPairsByValue(pairsArray) {
-      return [...pairsArray].sort((a, b) => {
-        const valA = calculatePairValue(a);
-        const valB = calculatePairValue(b);
-        return valB - valA; // Descending order (most positive first)
-      });
-    }
-
-    // Sort base contracts by value
-    function getSortedBaseContracts() {
-      return Object.entries(futuresData)
-        .sort((a, b) => b[1] - a[1]) // Sort by value descending
-        .map(([id, value]) => ({ id, value }));
-    }
-
     function updateUI() {
       document.getElementById('report-date').textContent = `Report Date: ${reportDate || 'Not loaded'}`;
-      
-      // Sort and render each section
-      document.getElementById('currency-grid').innerHTML = 
-        sortPairsByValue(pairs.currencies).map(createCard).join('');
-      document.getElementById('crosses-grid').innerHTML = 
-        sortPairsByValue(pairs.crosses).map(createCard).join('');
-      document.getElementById('commodities-grid').innerHTML = 
-        sortPairsByValue(pairs.commodities).map(createCard).join('');
-      document.getElementById('indices-grid').innerHTML = 
-        sortPairsByValue(pairs.indices).map(createCard).join('');
-      document.getElementById('energy-grid').innerHTML = 
-        sortPairsByValue(pairs.energy).map(createCard).join('');
-      document.getElementById('grains-grid').innerHTML = 
-        sortPairsByValue(pairs.grains).map(createCard).join('');
-      document.getElementById('softs-grid').innerHTML = 
-        sortPairsByValue(pairs.softs).map(createCard).join('');
-      document.getElementById('meats-grid').innerHTML = 
-        sortPairsByValue(pairs.meats).map(createCard).join('');
-      document.getElementById('crypto-grid').innerHTML = 
-        sortPairsByValue(pairs.crypto).map(createCard).join('');
-      
-      // Sort base contracts from most positive to most negative
-      document.getElementById('base-grid').innerHTML = 
-        getSortedBaseContracts().map(({ id, value }) => createBaseCard(id, value)).join('');
+      document.getElementById('currency-grid').innerHTML = pairs.currencies.map(createCard).join('');
+      document.getElementById('crosses-grid').innerHTML = pairs.crosses.map(createCard).join('');
+      document.getElementById('commodities-grid').innerHTML = pairs.commodities.map(createCard).join('');
+      document.getElementById('indices-grid').innerHTML = pairs.indices.map(createCard).join('');
+      document.getElementById('base-grid').innerHTML = Object.keys(futuresData).map(createBaseCard).join('');
     }
 
     function showSection(section, element) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       element.classList.add('active');
       
-      const sections = ['currencies', 'crosses', 'commodities', 'indices', 'energy', 'grains', 'softs', 'meats', 'crypto'];
+      const sections = ['currencies', 'crosses', 'commodities', 'indices'];
       sections.forEach(s => {
         document.getElementById(s).classList.toggle('hidden', section !== 'all' && section !== s);
       });
