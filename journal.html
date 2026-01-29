@@ -238,6 +238,7 @@ tr:hover{background:rgba(255,255,255,.02)}
 <button class="tab" onclick="showTab('strategies')">📋 Strategies</button>
 <button class="tab" onclick="showTab('pairanalysis')">🔬 Pair Analysis</button>
 <button class="tab" onclick="showTab('checklist')">✅ Quality Scorer</button>
+<button class="tab" onclick="showTab('tradingplan')">📝 Trading Plan</button>
 <button class="tab" onclick="showTab('gallery')">🖼️ Screenshots</button>
 <button class="tab" onclick="showTab('customize')">🎨 Customize</button>
 </div>
@@ -444,6 +445,134 @@ tr:hover{background:rgba(255,255,255,.02)}
 <tbody id="pairAnalysisBody"></tbody>
 </table>
 </div>
+</div>
+</div>
+</div>
+
+<!-- TRADING PLAN SECTION -->
+<div id="tradingplan" class="tab-content">
+<div class="card">
+<div class="card-header">
+<h3>📝 My Trading Plan</h3>
+<button class="btn btn-primary" onclick="saveTradingPlan()">💾 Save Plan</button>
+</div>
+<div class="card-body">
+<p style="color:var(--text2);margin-bottom:20px">Document your complete trading plan. This is your rulebook - review it before every trading session!</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:20px">
+
+<!-- TRADING IDENTITY -->
+<div class="trading-plan-section" style="background:var(--bg2);border-radius:12px;padding:20px;border-left:4px solid var(--gold)">
+<h4 style="color:var(--gold);margin-bottom:15px">🎯 Trading Identity</h4>
+<div class="form-group" style="margin-bottom:15px">
+<label style="color:var(--text2);font-size:.85rem">What type of trader am I?</label>
+<textarea id="planIdentity" placeholder="e.g., I am a supply & demand trader focused on 4H/Daily zones with LTF confirmation..." style="width:100%;min-height:80px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+<div class="form-group">
+<label style="color:var(--text2);font-size:.85rem">My trading goals</label>
+<textarea id="planGoals" placeholder="e.g., Consistent 5% monthly return, max 2% daily drawdown..." style="width:100%;min-height:80px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+</div>
+
+<!-- MARKET CONDITIONS -->
+<div class="trading-plan-section" style="background:var(--bg2);border-radius:12px;padding:20px;border-left:4px solid var(--green)">
+<h4 style="color:var(--green);margin-bottom:15px">📊 When I Trade</h4>
+<div class="form-group" style="margin-bottom:15px">
+<label style="color:var(--text2);font-size:.85rem">Sessions I trade</label>
+<textarea id="planSessions" placeholder="e.g., London session (8:00-12:00), NY open (14:30-17:00)..." style="width:100%;min-height:60px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+<div class="form-group" style="margin-bottom:15px">
+<label style="color:var(--text2);font-size:.85rem">Pairs I trade</label>
+<textarea id="planPairs" placeholder="e.g., EURUSD, GBPUSD, XAUUSD only..." style="width:100%;min-height:60px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+<div class="form-group">
+<label style="color:var(--text2);font-size:.85rem">Conditions I avoid</label>
+<textarea id="planAvoid" placeholder="e.g., High impact news, Friday afternoons, low volume Asia..." style="width:100%;min-height:60px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+</div>
+
+<!-- ENTRY RULES -->
+<div class="trading-plan-section" style="background:var(--bg2);border-radius:12px;padding:20px;border-left:4px solid #448AFF">
+<h4 style="color:#448AFF;margin-bottom:15px">📥 Entry Rules</h4>
+<div class="form-group" style="margin-bottom:15px">
+<label style="color:var(--text2);font-size:.85rem">HTF Analysis (D1/4H)</label>
+<textarea id="planHTF" placeholder="e.g., Identify HTF trend, locate fresh S&D zones, mark key levels..." style="width:100%;min-height:80px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+<div class="form-group" style="margin-bottom:15px">
+<label style="color:var(--text2);font-size:.85rem">LTF Entry (15m/5m/1m)</label>
+<textarea id="planLTF" placeholder="e.g., Wait for LTF CHoCH, enter on FVG or OB, confirm with volume..." style="width:100%;min-height:80px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+<div class="form-group">
+<label style="color:var(--text2);font-size:.85rem">Entry Checklist</label>
+<textarea id="planEntryChecklist" placeholder="1. HTF zone identified
+2. Price in premium/discount
+3. LTF structure shift
+4. Entry model confirmed
+5. R:R minimum 2:1" style="width:100%;min-height:100px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+</div>
+
+<!-- EXIT RULES -->
+<div class="trading-plan-section" style="background:var(--bg2);border-radius:12px;padding:20px;border-left:4px solid #E040FB">
+<h4 style="color:#E040FB;margin-bottom:15px">📤 Exit Rules</h4>
+<div class="form-group" style="margin-bottom:15px">
+<label style="color:var(--text2);font-size:.85rem">Take Profit Rules</label>
+<textarea id="planTP" placeholder="e.g., TP1 at 1:1 (partials), TP2 at opposing zone, trail after 2R..." style="width:100%;min-height:80px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+<div class="form-group">
+<label style="color:var(--text2);font-size:.85rem">Stop Loss Rules</label>
+<textarea id="planSL" placeholder="e.g., SL below/above zone, never move SL against trade, max 1% risk per trade..." style="width:100%;min-height:80px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+</div>
+
+<!-- RISK MANAGEMENT -->
+<div class="trading-plan-section" style="background:var(--bg2);border-radius:12px;padding:20px;border-left:4px solid var(--red)">
+<h4 style="color:var(--red);margin-bottom:15px">⚠️ Risk Management</h4>
+<div class="form-group" style="margin-bottom:15px">
+<label style="color:var(--text2);font-size:.85rem">Position Sizing</label>
+<textarea id="planRisk" placeholder="e.g., 1% risk per trade, max 2 trades per day, max 3% daily drawdown..." style="width:100%;min-height:80px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+<div class="form-group">
+<label style="color:var(--text2);font-size:.85rem">Drawdown Rules</label>
+<textarea id="planDrawdown" placeholder="e.g., Stop trading after 3 consecutive losses, reduce size by 50% after 5% drawdown..." style="width:100%;min-height:80px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+</div>
+
+<!-- PSYCHOLOGY -->
+<div class="trading-plan-section" style="background:var(--bg2);border-radius:12px;padding:20px;border-left:4px solid #FF9800">
+<h4 style="color:#FF9800;margin-bottom:15px">🧠 Psychology Rules</h4>
+<div class="form-group" style="margin-bottom:15px">
+<label style="color:var(--text2);font-size:.85rem">Pre-Trading Routine</label>
+<textarea id="planPreRoutine" placeholder="e.g., Review trading plan, check economic calendar, mark key levels, meditate 5min..." style="width:100%;min-height:80px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+<div class="form-group" style="margin-bottom:15px">
+<label style="color:var(--text2);font-size:.85rem">Rules to Follow</label>
+<textarea id="planRules" placeholder="1. No revenge trading
+2. No trading when tired/emotional
+3. Accept every loss as cost of business
+4. Stick to the plan no matter what
+5. Journal every trade" style="width:100%;min-height:100px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+<div class="form-group">
+<label style="color:var(--text2);font-size:.85rem">Post-Trading Routine</label>
+<textarea id="planPostRoutine" placeholder="e.g., Journal all trades, review screenshots, calculate daily P&L, weekly review on Sunday..." style="width:100%;min-height:80px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+</div>
+
+</div>
+
+<!-- NOTES SECTION -->
+<div style="margin-top:20px;background:var(--bg2);border-radius:12px;padding:20px">
+<h4 style="color:var(--gold);margin-bottom:15px">📋 Additional Notes</h4>
+<textarea id="planNotes" placeholder="Any other rules, reminders, or notes for yourself..." style="width:100%;min-height:120px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical"></textarea>
+</div>
+
+<div style="margin-top:20px;display:flex;gap:10px">
+<button class="btn btn-primary" onclick="saveTradingPlan()">💾 Save Trading Plan</button>
+<button class="btn btn-secondary" onclick="exportTradingPlan()">📄 Export as PDF</button>
+<button class="btn btn-secondary" onclick="showPlanBeforeTrade()">👁️ Show Before Each Trade</button>
+</div>
+
 </div>
 </div>
 </div>
@@ -771,7 +900,7 @@ let currentAccount='all';
 let settings=JSON.parse(localStorage.getItem('sdSettings'))||{limit:200,risk:50,account:10000};
 let charts={},currentMonth=new Date();
 
-document.addEventListener('DOMContentLoaded',function(){loadSettings();setDefaultDate();updateAccountSelectors();updateStrategySelectors();setupZoneScoreListeners();updateStorageIndicator();buildCustomLists();rebuildFormSelects();initQualityScorer();updateAll()});
+document.addEventListener('DOMContentLoaded',function(){loadSettings();setDefaultDate();updateAccountSelectors();updateStrategySelectors();setupZoneScoreListeners();updateStorageIndicator();buildCustomLists();rebuildFormSelects();initQualityScorer();loadTradingPlan();updateAll()});
 
 function updateStorageIndicator(){
 var used=getStorageUsage();
@@ -1903,6 +2032,109 @@ showToast('Checklist saved!');
 }
 
 // ============================================
+// TRADING PLAN FUNCTIONS
+// ============================================
+var tradingPlan=JSON.parse(localStorage.getItem('sdTradingPlan'))||{};
+
+function loadTradingPlan(){
+document.getElementById('planIdentity').value=tradingPlan.identity||'';
+document.getElementById('planGoals').value=tradingPlan.goals||'';
+document.getElementById('planSessions').value=tradingPlan.sessions||'';
+document.getElementById('planPairs').value=tradingPlan.pairs||'';
+document.getElementById('planAvoid').value=tradingPlan.avoid||'';
+document.getElementById('planHTF').value=tradingPlan.htf||'';
+document.getElementById('planLTF').value=tradingPlan.ltf||'';
+document.getElementById('planEntryChecklist').value=tradingPlan.entryChecklist||'';
+document.getElementById('planTP').value=tradingPlan.tp||'';
+document.getElementById('planSL').value=tradingPlan.sl||'';
+document.getElementById('planRisk').value=tradingPlan.risk||'';
+document.getElementById('planDrawdown').value=tradingPlan.drawdown||'';
+document.getElementById('planPreRoutine').value=tradingPlan.preRoutine||'';
+document.getElementById('planRules').value=tradingPlan.rules||'';
+document.getElementById('planPostRoutine').value=tradingPlan.postRoutine||'';
+document.getElementById('planNotes').value=tradingPlan.notes||'';
+}
+
+function saveTradingPlan(){
+tradingPlan={
+identity:document.getElementById('planIdentity').value,
+goals:document.getElementById('planGoals').value,
+sessions:document.getElementById('planSessions').value,
+pairs:document.getElementById('planPairs').value,
+avoid:document.getElementById('planAvoid').value,
+htf:document.getElementById('planHTF').value,
+ltf:document.getElementById('planLTF').value,
+entryChecklist:document.getElementById('planEntryChecklist').value,
+tp:document.getElementById('planTP').value,
+sl:document.getElementById('planSL').value,
+risk:document.getElementById('planRisk').value,
+drawdown:document.getElementById('planDrawdown').value,
+preRoutine:document.getElementById('planPreRoutine').value,
+rules:document.getElementById('planRules').value,
+postRoutine:document.getElementById('planPostRoutine').value,
+notes:document.getElementById('planNotes').value
+};
+localStorage.setItem('sdTradingPlan',JSON.stringify(tradingPlan));
+showToast('Trading plan saved!');
+}
+
+function exportTradingPlan(){
+var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>My Trading Plan</title><style>';
+html+='body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#1a1a2e;color:#eee;padding:40px;max-width:900px;margin:0 auto}';
+html+='h1{color:#FFD700;border-bottom:2px solid #FFD700;padding-bottom:10px}h2{color:#FFD700;margin-top:30px;font-size:1.2rem}';
+html+='.section{background:#252540;padding:20px;border-radius:10px;margin:15px 0;border-left:4px solid #FFD700}';
+html+='.section h3{margin:0 0 10px 0;color:#FFD700}';
+html+='p{white-space:pre-wrap;color:#ccc;margin:0;line-height:1.6}';
+html+='</style></head><body>';
+html+='<h1>📝 My Trading Plan</h1>';
+html+='<p style="color:#888">Generated: '+new Date().toLocaleDateString()+'</p>';
+
+if(tradingPlan.identity){html+='<div class="section"><h3>🎯 Trading Identity</h3><p>'+tradingPlan.identity+'</p></div>'}
+if(tradingPlan.goals){html+='<div class="section"><h3>🎯 Goals</h3><p>'+tradingPlan.goals+'</p></div>'}
+if(tradingPlan.sessions){html+='<div class="section"><h3>📊 Sessions</h3><p>'+tradingPlan.sessions+'</p></div>'}
+if(tradingPlan.pairs){html+='<div class="section"><h3>📊 Pairs</h3><p>'+tradingPlan.pairs+'</p></div>'}
+if(tradingPlan.avoid){html+='<div class="section"><h3>📊 Conditions to Avoid</h3><p>'+tradingPlan.avoid+'</p></div>'}
+if(tradingPlan.htf){html+='<div class="section"><h3>📥 HTF Analysis</h3><p>'+tradingPlan.htf+'</p></div>'}
+if(tradingPlan.ltf){html+='<div class="section"><h3>📥 LTF Entry</h3><p>'+tradingPlan.ltf+'</p></div>'}
+if(tradingPlan.entryChecklist){html+='<div class="section"><h3>📥 Entry Checklist</h3><p>'+tradingPlan.entryChecklist+'</p></div>'}
+if(tradingPlan.tp){html+='<div class="section"><h3>📤 Take Profit</h3><p>'+tradingPlan.tp+'</p></div>'}
+if(tradingPlan.sl){html+='<div class="section"><h3>📤 Stop Loss</h3><p>'+tradingPlan.sl+'</p></div>'}
+if(tradingPlan.risk){html+='<div class="section"><h3>⚠️ Position Sizing</h3><p>'+tradingPlan.risk+'</p></div>'}
+if(tradingPlan.drawdown){html+='<div class="section"><h3>⚠️ Drawdown Rules</h3><p>'+tradingPlan.drawdown+'</p></div>'}
+if(tradingPlan.preRoutine){html+='<div class="section"><h3>🧠 Pre-Trading Routine</h3><p>'+tradingPlan.preRoutine+'</p></div>'}
+if(tradingPlan.rules){html+='<div class="section"><h3>🧠 Rules to Follow</h3><p>'+tradingPlan.rules+'</p></div>'}
+if(tradingPlan.postRoutine){html+='<div class="section"><h3>🧠 Post-Trading Routine</h3><p>'+tradingPlan.postRoutine+'</p></div>'}
+if(tradingPlan.notes){html+='<div class="section"><h3>📋 Notes</h3><p>'+tradingPlan.notes+'</p></div>'}
+
+html+='<p style="text-align:center;color:#444;margin-top:40px">Generated by S&D Trading Journal Pro</p>';
+html+='</body></html>';
+
+var win=window.open('','_blank');
+win.document.write(html);
+win.document.close();
+win.print();
+}
+
+var showPlanPopup=JSON.parse(localStorage.getItem('sdShowPlanPopup'))||false;
+
+function showPlanBeforeTrade(){
+showPlanPopup=!showPlanPopup;
+localStorage.setItem('sdShowPlanPopup',JSON.stringify(showPlanPopup));
+showToast(showPlanPopup?'Plan will show before new trades':'Plan popup disabled');
+}
+
+function checkShowPlanPopup(){
+if(showPlanPopup&&tradingPlan.rules){
+var msg='📝 TRADING PLAN REMINDER\n\n';
+msg+='✅ Rules to Follow:\n'+tradingPlan.rules+'\n\n';
+if(tradingPlan.entryChecklist)msg+='✅ Entry Checklist:\n'+tradingPlan.entryChecklist+'\n\n';
+msg+='Ready to follow your plan?';
+if(!confirm(msg)){return false}
+}
+return true;
+}
+
+// ============================================
 // PDF REPORT GENERATOR
 // ============================================
 function generateWeeklyReport(){
@@ -2328,7 +2560,7 @@ document.getElementById('tradeMistakes').value=selected.join(',')}
 // PASSWORD PROTECTION
 // ============================================
 // CHANGE THIS PASSWORD TO YOUR OWN!
-var APP_PASSWORD = 'trading123';
+var APP_PASSWORD = 'Swingelite1313-';
 
 function checkPassword(){
 var input=document.getElementById('passwordInput').value;
