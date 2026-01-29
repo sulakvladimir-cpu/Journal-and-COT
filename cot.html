@@ -213,7 +213,7 @@
       // === METALS (original commodities) ===
       XAU: { search: 'GOLD', exchange: 'COMMODITY EXCHANGE INC', exclude: 'MICRO' },
       XAG: { search: 'SILVER', exchange: 'COMMODITY EXCHANGE INC', exclude: 'MICRO' },
-      COPPER: { search: 'COPPER', exchange: 'COMMODITY EXCHANGE INC' },
+      COPPER: { search: 'COPPER', exchange: 'COMMODITY EXCHANGE INC', exactMatch: 'COPPER - COMMODITY EXCHANGE INC.' },
       PLATINUM: { search: 'PLATINUM', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
       PALLADIUM: { search: 'PALLADIUM', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
       
@@ -223,12 +223,12 @@
       US30: { search: 'DJIA', exchange: 'CHICAGO BOARD OF TRADE' },
       US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
       VIX: { search: 'VIX FUTURES', exchange: 'CBOE FUTURES EXCHANGE' },
-      NIKKEI: { search: 'NIKKEI STOCK', exchange: 'CHICAGO MERCANTILE EXCHANGE' },
+      NIKKEI: { search: 'NIKKEI STOCK AVERAGE', exchange: 'CHICAGO MERCANTILE EXCHANGE', exactMatch: 'NIKKEI STOCK AVERAGE - CHICAGO MERCANTILE EXCHANGE' },
       
       // === ENERGY (new) ===
       WTI: { search: 'WTI-PHYSICAL', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
       BRENT: { search: 'BRENT CRUDE', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
-      NATGAS: { search: 'NATURAL GAS', exchange: 'NEW YORK MERCANTILE EXCHANGE', exclude: 'MICRO' },
+      NATGAS: { search: 'NATURAL GAS', exchange: 'NEW YORK MERCANTILE EXCHANGE', exactMatch: 'NATURAL GAS - NEW YORK MERCANTILE EXCHANGE' },
       RBOB: { search: 'RBOB GASOLINE', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
       HEATING: { search: 'NO. 2 HEATING OIL', exchange: 'NEW YORK MERCANTILE EXCHANGE' },
       
