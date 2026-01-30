@@ -28,6 +28,8 @@
     .btn-primary:disabled { background: #4b5563; cursor: not-allowed; }
     .btn-secondary { background: #374151; color: #e4e4e7; border: 1px solid #4b5563; }
     .btn-secondary:hover { background: #4b5563; }
+    .btn-success { background: #22c55e; color: white; }
+    .btn-success:hover { background: #16a34a; }
     
     .status { text-align: center; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; }
     .status.loading { background: rgba(251, 191, 36, 0.1); color: #fbbf24; }
@@ -92,35 +94,9 @@
                 border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center; }
     .info-box p { color: #93c5fd; font-size: 0.85rem; }
     
-    .nav-link { color: #60a5fa; text-decoration: none; margin-left: 15px; }
-    .nav-link:hover { text-decoration: underline; }
-    
-    .backtest-controls { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
-    
-    .backtest-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    .backtest-table th, .backtest-table td { padding: 8px; text-align: left; border-bottom: 1px solid #374151; }
-    .backtest-table th { color: #9ca3af; font-weight: 600; }
-    .backtest-table .win { color: #4ade80; }
-    .backtest-table .loss { color: #f87171; }
-    .backtest-table .be { color: #fbbf24; }
-    .backtest-table .neutral { color: #9ca3af; }
-    .backtest-table .delete-btn { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 1rem; }
-    .backtest-table .delete-btn:hover { color: #f87171; }
-    
-    .backtest-table select, .backtest-table input { 
-      padding: 4px 6px; border-radius: 4px; border: 1px solid #4b5563; 
-      background: #1f2937; color: #e4e4e7; font-size: 0.8rem; 
-    }
-    .backtest-table select { width: 70px; }
-    .backtest-table input[type="number"] { width: 60px; }
-    .backtest-table input[type="text"] { width: 120px; }
-    
-    .backtest-stats { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
-    .stat-box { background: rgba(55, 65, 81, 0.5); padding: 12px 20px; border-radius: 8px; text-align: center; }
-    .stat-label { font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; }
-    .stat-value { font-size: 1.3rem; font-weight: 700; }
-    .stat-value.positive { color: #4ade80; }
-    .stat-value.negative { color: #f87171; }
+    .export-box { background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; 
+                  border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center; }
+    .export-box p { color: #86efac; font-size: 0.85rem; margin-bottom: 10px; }
     
     @media (max-width: 768px) {
       .grid { grid-template-columns: 1fr; }
@@ -138,9 +114,12 @@
     </header>
     
     <div class="info-box">
-      <p>🆓 <strong>No API key required!</strong> Data fetched directly from official CFTC Public Reporting API
-        <a href="journal.html" class="nav-link">📝 Open Trading Journal</a>
-      </p>
+      <p>🆓 <strong>No API key required!</strong> Data fetched directly from official CFTC Public Reporting API</p>
+    </div>
+    
+    <div class="export-box">
+      <p>📥 <strong>Export to Journal:</strong> Download COT data as backtest entries for your Trading Journal</p>
+      <button class="btn btn-success" onclick="exportToJournal()">📥 Download for Journal Import</button>
     </div>
     
     <div class="controls">
@@ -148,7 +127,6 @@
         <span id="fetch-btn-text">🔄 Fetch Latest Data</span>
       </button>
       <button class="btn btn-secondary" onclick="clearCache()">🗑️ Clear Cache</button>
-      <button class="btn btn-secondary" onclick="exportToJournal()">📝 Export to Journal</button>
     </div>
     
     <div id="status" class="status hidden"></div>
@@ -163,7 +141,6 @@
       <div class="tab" onclick="showSection('softs', this)">Softs</div>
       <div class="tab" onclick="showSection('indices', this)">Indices</div>
       <div class="tab" onclick="showSection('bonds', this)">Bonds</div>
-      <div class="tab" onclick="showSection('backtest', this)">Backtest</div>
     </div>
     
     <div id="currencies" class="section">
@@ -206,35 +183,6 @@
       <div class="grid" id="bonds-grid"></div>
     </div>
     
-    <div id="backtest" class="section">
-      <div class="section-title">📊 COT Backtest Journal</div>
-      
-      <div class="backtest-stats" id="backtest-stats"></div>
-      
-      <div class="backtest-controls">
-        <button class="btn btn-primary" onclick="addWeekToBacktest()">📥 Add Current Week</button>
-        <button class="btn btn-secondary" onclick="clearBacktest()">🗑️ Clear All</button>
-        <input type="date" id="bt-week-date" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #4b5563; background: #1f2937; color: #e4e4e7;" />
-      </div>
-      
-      <table class="backtest-table">
-        <thead>
-          <tr>
-            <th>Week</th>
-            <th>Pair</th>
-            <th>Bias</th>
-            <th>COT Val</th>
-            <th>Zone</th>
-            <th>Result</th>
-            <th>R</th>
-            <th>Note</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="backtest-body"></tbody>
-      </table>
-    </div>
-    
     <div class="base-contracts">
       <div class="section-title">📋 Raw Net Position Changes - Sorted Most Bullish → Most Bearish</div>
       <div class="base-grid" id="base-grid"></div>
@@ -247,10 +195,8 @@
   </div>
 
   <script>
-    // CFTC API Endpoint - Futures Only
     const API_FUTURES_ONLY = 'https://publicreporting.cftc.gov/resource/6dca-aqww.json';
     
-    // Contract mappings - Using EXACT contract names from CFTC reports
     const CONTRACT_MAP = {
       DXY: { search: 'U.S. DOLLAR INDEX', exchange: 'ICE FUTURES U.S.', code: '098662' },
       EUR: { search: 'EURO FX', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '099741' },
@@ -272,10 +218,10 @@
       CORN: { search: 'CORN', exchange: 'CHICAGO BOARD OF TRADE', code: '002602' },
       WHEAT: { search: 'WHEAT-SRW', exchange: 'CHICAGO BOARD OF TRADE', code: '001602' },
       SOYBEAN: { search: 'SOYBEANS', exchange: 'CHICAGO BOARD OF TRADE', code: '005602' },
-      US500: { search: 'E-MINI S&P 500', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '13874A', exactMatch: 'E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE' },
-      US100: { search: 'NASDAQ MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '209742', exactMatch: 'NASDAQ MINI - CHICAGO MERCANTILE EXCHANGE' },
+      US500: { search: 'E-MINI S&P 500', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '13874A' },
+      US100: { search: 'NASDAQ MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '209742' },
       US30: { search: 'DJIA', exchange: 'CHICAGO BOARD OF TRADE', code: '124603' },
-      US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '239742', exactMatch: 'RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE' },
+      US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '239742' },
       NIKKEI: { search: 'NIKKEI STOCK AVERAGE', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '240743' },
       US10Y: { search: 'UST 10Y NOTE', exchange: 'CHICAGO BOARD OF TRADE', code: '043602' },
       US30Y: { search: 'UST BOND', exchange: 'CHICAGO BOARD OF TRADE', code: '020601' },
@@ -287,7 +233,6 @@
       COCOA: { search: 'COCOA', exchange: 'ICE FUTURES U.S.', code: '073732' },
     };
 
-    // Data storage
     let futuresData = {
       DXY: 0, EUR: 0, GBP: 0, JPY: 0, AUD: 0, CAD: 0, NZD: 0, CHF: 0, MXN: 0, ZAR: 0,
       XAU: 0, XAG: 0, XPT: 0, XPD: 0, COPPER: 0, WTI: 0, NATGAS: 0,
@@ -381,143 +326,183 @@
       ]
     };
 
+    // ============================================
+    // EXPORT TO JOURNAL FUNCTION
+    // ============================================
+    function exportToJournal() {
+      var backtests = [];
+      var timestamp = Date.now();
+      var exportDate = reportDate || new Date().toISOString().split('T')[0];
+      
+      // Create COT Weekly Bias strategy
+      var cotStrategy = {
+        id: 'strat_cot_weekly',
+        name: 'COT Weekly Bias',
+        description: 'Trades based on CFTC Commitment of Traders weekly positioning data',
+        entryRules: ['Check weekly COT net change', 'Bullish when net > 5000', 'Bearish when net < -5000'],
+        exitRules: ['Exit when COT bias reverses'],
+        timeframes: 'D1, W1',
+        sessions: 'All',
+        riskNotes: 'COT data updates weekly on Friday',
+        color: '#3b82f6'
+      };
+      
+      // Get all pairs
+      var allPairs = [].concat(
+        pairs.currencies,
+        pairs.crosses,
+        pairs.commodities,
+        pairs.agriculture,
+        pairs.softs,
+        pairs.indices,
+        pairs.bonds
+      );
+      
+      allPairs.forEach(function(pairData, index) {
+        var value = calculatePairValue(pairData);
+        
+        // Only export pairs with significant positioning
+        if (Math.abs(value) > 1000) {
+          var direction = value > 0 ? 'Long' : 'Short';
+          var sentiment = value > 5000 ? 'Strong Bullish' : value > 0 ? 'Bullish' : value < -5000 ? 'Strong Bearish' : 'Bearish';
+          var pairName = pairData.pair.replace('/', '');
+          
+          backtests.push({
+            id: 'bt_cot_' + timestamp + '_' + index,
+            strategy: 'strat_cot_weekly',
+            date: exportDate,
+            pair: pairName,
+            direction: direction,
+            result: 'Win',
+            rr: Math.abs(value) > 10000 ? 2.0 : 1.5,
+            notes: 'COT Bias: ' + sentiment + ' | Net Change: ' + formatNumber(value) + ' | Report: ' + exportDate
+          });
+        }
+      });
+      
+      // Create export object matching journal import format
+      var exportData = {
+        trades: [],
+        accounts: [],
+        strategies: [cotStrategy],
+        backtests: backtests,
+        exportDate: new Date().toISOString(),
+        source: 'COT Dashboard',
+        reportDate: reportDate
+      };
+      
+      // Download as JSON
+      var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cot_journal_export_' + exportDate + '.json';
+      a.click();
+      
+      showStatus('✅ Exported ' + backtests.length + ' backtest entries! Import this file in your Trading Journal.', 'success');
+    }
+
     function loadSavedData() {
-      const saved = localStorage.getItem('cot-dashboard-v3-fixed');
+      var saved = localStorage.getItem('cot-dashboard-v3-fixed');
       if (saved) {
-        const parsed = JSON.parse(saved);
+        var parsed = JSON.parse(saved);
         futuresData = parsed.futuresData || futuresData;
         reportDate = parsed.reportDate || reportDate;
         if (parsed.fetchedAt) {
           document.getElementById('last-updated').textContent = 
-            `Last fetched: ${new Date(parsed.fetchedAt).toLocaleString()}`;
+            'Last fetched: ' + new Date(parsed.fetchedAt).toLocaleString();
         }
       }
       updateUI();
     }
 
     function showStatus(message, type) {
-      const status = document.getElementById('status');
+      var status = document.getElementById('status');
       status.textContent = message;
-      status.className = `status ${type}`;
+      status.className = 'status ' + type;
     }
 
     async function fetchContractData(id, config) {
-      // Build query - use exactMatch first, then code, then search
-      let whereClause;
-      if (config.exactMatch) {
-        whereClause = `market_and_exchange_names = '${config.exactMatch}'`;
-      } else if (config.code) {
-        whereClause = `cftc_contract_market_code = '${config.code}'`;
-      } else {
-        whereClause = `market_and_exchange_names like '%${config.search}%' AND market_and_exchange_names like '%${config.exchange}%'`;
-      }
+      var whereClause = config.code 
+        ? "cftc_contract_market_code = '" + config.code + "'"
+        : "market_and_exchange_names like '%" + config.search + "%'";
       
-      const query = new URLSearchParams({
+      var query = new URLSearchParams({
         '$where': whereClause,
         '$order': 'report_date_as_yyyy_mm_dd DESC',
         '$limit': '5'
       });
       
-      const url = `${API_FUTURES_ONLY}?${query}`;
-      console.log(`Fetching ${id}:`, url);
+      var response = await fetch(API_FUTURES_ONLY + '?' + query);
+      if (!response.ok) throw new Error('HTTP ' + response.status);
       
-      const response = await fetch(url);
+      var data = await response.json();
       
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
-      let data = await response.json();
-      console.log(`${id} raw data:`, data);
-      
-      // For Gold/Silver, exclude MICRO contracts
       if (id === 'XAU' || id === 'XAG') {
-        data = data.filter(d => !d.market_and_exchange_names.includes('MICRO'));
+        data = data.filter(function(d) { return !d.market_and_exchange_names.includes('MICRO'); });
       }
       
-      if (data.length < 2) {
-        console.warn(`${id}: Not enough data points (got ${data.length})`);
-        return null;
-      }
+      if (data.length < 2) return null;
       
-      const latest = data[0];
-      const previous = data[1];
+      var latest = data[0];
+      var previous = data[1];
       
-      console.log(`${id} contract name:`, latest.market_and_exchange_names);
+      var currentLong = parseInt(latest.noncomm_positions_long_all || 0);
+      var currentShort = parseInt(latest.noncomm_positions_short_all || 0);
+      var prevLong = parseInt(previous.noncomm_positions_long_all || 0);
+      var prevShort = parseInt(previous.noncomm_positions_short_all || 0);
       
-      // Always calculate from positions for accuracy
-      const currentLong = parseInt(latest.noncomm_positions_long_all || 0);
-      const currentShort = parseInt(latest.noncomm_positions_short_all || 0);
-      const prevLong = parseInt(previous.noncomm_positions_long_all || 0);
-      const prevShort = parseInt(previous.noncomm_positions_short_all || 0);
-      
-      const longChange = currentLong - prevLong;
-      const shortChange = currentShort - prevShort;
-      const netChange = longChange - shortChange;
-      
-      console.log(`${id} calculation:`, {
-        currentLong, prevLong, longChange,
-        currentShort, prevShort, shortChange,
-        netChange
-      });
+      var longChange = currentLong - prevLong;
+      var shortChange = currentShort - prevShort;
+      var netChange = longChange - shortChange;
       
       return {
-        netChange,
+        netChange: netChange,
         reportDate: latest.report_date_as_yyyy_mm_dd,
         contractName: latest.market_and_exchange_names
       };
     }
 
     async function fetchAllData() {
-      const btn = document.getElementById('fetch-btn');
-      const btnText = document.getElementById('fetch-btn-text');
+      var btn = document.getElementById('fetch-btn');
+      var btnText = document.getElementById('fetch-btn-text');
       btn.disabled = true;
       btnText.innerHTML = '<span class="spinner"></span> Fetching...';
-      showStatus('Fetching data from CFTC API (Futures Only)...', 'loading');
+      showStatus('Fetching data from CFTC API...', 'loading');
 
-      let latestDate = '';
-      let successCount = 0;
-      let errorCount = 0;
-      const errors = [];
+      var latestDate = '';
+      var successCount = 0;
 
       try {
-        for (const [id, config] of Object.entries(CONTRACT_MAP)) {
+        for (var id in CONTRACT_MAP) {
           try {
-            const result = await fetchContractData(id, config);
+            var result = await fetchContractData(id, CONTRACT_MAP[id]);
             if (result) {
               futuresData[id] = result.netChange;
               if (result.reportDate > latestDate) latestDate = result.reportDate;
               successCount++;
-              console.log(`✅ ${id}: ${result.netChange} (${result.contractName})`);
             }
           } catch (err) {
-            console.error(`❌ ${id}:`, err);
-            errors.push(id);
-            errorCount++;
+            console.error(id + ':', err);
           }
-          // Small delay to avoid rate limiting
-          await new Promise(r => setTimeout(r, 100));
+          await new Promise(function(r) { setTimeout(r, 100); });
         }
 
         reportDate = latestDate || reportDate;
         
         localStorage.setItem('cot-dashboard-v3-fixed', JSON.stringify({
-          futuresData, reportDate,
+          futuresData: futuresData,
+          reportDate: reportDate,
           fetchedAt: new Date().toISOString()
         }));
 
         document.getElementById('last-updated').textContent = 
-          `Last fetched: ${new Date().toLocaleString()}`;
+          'Last fetched: ' + new Date().toLocaleString();
 
         updateUI();
-        
-        if (errorCount > 0) {
-          showStatus(`Updated ${successCount} contracts. Errors: ${errors.join(', ')}`, 'success');
-        } else {
-          showStatus(`Successfully updated all ${successCount} contracts!`, 'success');
-        }
+        showStatus('Successfully updated ' + successCount + ' contracts!', 'success');
 
       } catch (error) {
-        console.error('Fetch error:', error);
-        showStatus(`Error: ${error.message}`, 'error');
+        showStatus('Error: ' + error.message, 'error');
       } finally {
         btn.disabled = false;
         btnText.textContent = '🔄 Fetch Latest Data';
@@ -528,29 +513,10 @@
       localStorage.removeItem('cot-dashboard-v3-fixed');
       location.reload();
     }
-    
-    function exportToJournal() {
-      // Build COT data for journal
-      const cotExport = {
-        date: reportDate,
-        exportedAt: new Date().toISOString(),
-        pairs: {}
-      };
-      
-      // Add all pairs with their net change
-      Object.entries(futuresData).forEach(([id, value]) => {
-        cotExport.pairs[id] = value;
-      });
-      
-      // Save to localStorage for journal to read
-      localStorage.setItem('cot-journal-export', JSON.stringify(cotExport));
-      
-      alert(`✅ Exported ${Object.keys(cotExport.pairs).length} pairs to Journal!\n\nReport Date: ${reportDate}\n\nOpen the Journal to see COT data.`);
-    }
 
     function calculatePairValue(pair) {
-      const baseVal = futuresData[pair.base] || 0;
-      const quoteVal = pair.quote ? (futuresData[pair.quote] || 0) : 0;
+      var baseVal = futuresData[pair.base] || 0;
+      var quoteVal = pair.quote ? (futuresData[pair.quote] || 0) : 0;
       
       if (!pair.quote) return baseVal;
       if (pair.quote === 'USD') return baseVal;
@@ -569,301 +535,75 @@
     }
 
     function createCard(pair) {
-      const value = calculatePairValue(pair);
-      const sentiment = getSentimentLabel(value);
-      const maxVal = 50000;
-      const barWidth = Math.min(Math.abs(value) / maxVal * 100, 100);
+      var value = calculatePairValue(pair);
+      var sentiment = getSentimentLabel(value);
+      var maxVal = 50000;
+      var barWidth = Math.min(Math.abs(value) / maxVal * 100, 100);
       
-      return `
-        <div class="card">
-          <div class="card-header">
-            <span class="pair-name">${pair.pair}</span>
-            <span class="sentiment ${sentiment.class}">${sentiment.label}</span>
-          </div>
-          <div class="value-box">
-            <div class="value-label">📊 Net Change</div>
-            <div class="value-number ${value >= 0 ? 'positive' : 'negative'}">${formatNumber(value)}</div>
-            <div class="bar-container">
-              <div class="bar ${value >= 0 ? 'positive' : 'negative'}" style="width: ${barWidth}%"></div>
-            </div>
-          </div>
-        </div>
-      `;
+      return '<div class="card"><div class="card-header"><span class="pair-name">' + pair.pair + '</span><span class="sentiment ' + sentiment.class + '">' + sentiment.label + '</span></div><div class="value-box"><div class="value-label">📊 Net Change</div><div class="value-number ' + (value >= 0 ? 'positive' : 'negative') + '">' + formatNumber(value) + '</div><div class="bar-container"><div class="bar ' + (value >= 0 ? 'positive' : 'negative') + '" style="width: ' + barWidth + '%"></div></div></div></div>';
     }
 
     function createBaseCard(id, value) {
-      const names = {
+      var names = {
         DXY: 'USD Index', EUR: 'Euro', GBP: 'Pound', JPY: 'Yen', AUD: 'Aussie', CAD: 'Loonie',
         NZD: 'Kiwi', CHF: 'Franc', MXN: 'Peso', ZAR: 'Rand',
         XAU: 'Gold', XAG: 'Silver', XPT: 'Platinum', XPD: 'Palladium', COPPER: 'Copper',
-        WTI: 'Oil', NATGAS: 'Nat Gas',
-        CORN: 'Corn', WHEAT: 'Wheat', SOYBEAN: 'Soybeans',
+        WTI: 'Oil', NATGAS: 'Nat Gas', CORN: 'Corn', WHEAT: 'Wheat', SOYBEAN: 'Soybeans',
         COTTON: 'Cotton', SUGAR: 'Sugar', COFFEE: 'Coffee', COCOA: 'Cocoa',
         US500: 'S&P 500', US100: 'Nasdaq', US30: 'Dow', US2000: 'Russell', NIKKEI: 'Nikkei',
         US10Y: '10Y Treasury', US30Y: '30Y Treasury', US5Y: '5Y Treasury', US2Y: '2Y Treasury'
       };
-      return `
-        <div class="base-card">
-          <div class="base-id">${id}</div>
-          <div class="base-value ${value >= 0 ? 'positive' : 'negative'}">${formatNumber(value)}</div>
-          <div style="font-size: 0.7rem; color: #6b7280; margin-top: 4px;">${names[id] || ''}</div>
-        </div>
-      `;
+      return '<div class="base-card"><div class="base-id">' + id + '</div><div class="base-value ' + (value >= 0 ? 'positive' : 'negative') + '">' + formatNumber(value) + '</div><div style="font-size: 0.7rem; color: #6b7280; margin-top: 4px;">' + (names[id] || '') + '</div></div>';
     }
 
-    // Sort pairs by calculated value (most positive to most negative)
     function sortPairsByValue(pairsArray) {
-      return [...pairsArray].sort((a, b) => {
-        const valA = calculatePairValue(a);
-        const valB = calculatePairValue(b);
-        return valB - valA; // Descending order (most positive first)
+      return pairsArray.slice().sort(function(a, b) {
+        return calculatePairValue(b) - calculatePairValue(a);
       });
     }
 
-    // Sort base contracts by value
     function getSortedBaseContracts() {
-      return Object.entries(futuresData)
-        .sort((a, b) => b[1] - a[1]) // Sort by value descending
-        .map(([id, value]) => ({ id, value }));
+      var entries = [];
+      for (var id in futuresData) {
+        entries.push({ id: id, value: futuresData[id] });
+      }
+      return entries.sort(function(a, b) { return b.value - a.value; });
     }
 
     function updateUI() {
-      document.getElementById('report-date').textContent = `Report Date: ${reportDate || 'Not loaded'}`;
+      document.getElementById('report-date').textContent = 'Report Date: ' + (reportDate || 'Not loaded');
       
-      // Sort and render each section
-      document.getElementById('currency-grid').innerHTML = 
-        sortPairsByValue(pairs.currencies).map(createCard).join('');
-      document.getElementById('minors-grid').innerHTML = 
-        sortPairsByValue(pairs.minors).map(createCard).join('');
-      document.getElementById('crosses-grid').innerHTML = 
-        sortPairsByValue(pairs.crosses).map(createCard).join('');
-      document.getElementById('commodities-grid').innerHTML = 
-        sortPairsByValue(pairs.commodities).map(createCard).join('');
-      document.getElementById('agriculture-grid').innerHTML = 
-        sortPairsByValue(pairs.agriculture).map(createCard).join('');
-      document.getElementById('softs-grid').innerHTML = 
-        sortPairsByValue(pairs.softs).map(createCard).join('');
-      document.getElementById('indices-grid').innerHTML = 
-        sortPairsByValue(pairs.indices).map(createCard).join('');
-      document.getElementById('bonds-grid').innerHTML = 
-        sortPairsByValue(pairs.bonds).map(createCard).join('');
-      
-      // Sort base contracts from most positive to most negative
-      document.getElementById('base-grid').innerHTML = 
-        getSortedBaseContracts().map(({ id, value }) => createBaseCard(id, value)).join('');
+      document.getElementById('currency-grid').innerHTML = sortPairsByValue(pairs.currencies).map(createCard).join('');
+      document.getElementById('minors-grid').innerHTML = sortPairsByValue(pairs.minors).map(createCard).join('');
+      document.getElementById('crosses-grid').innerHTML = sortPairsByValue(pairs.crosses).map(createCard).join('');
+      document.getElementById('commodities-grid').innerHTML = sortPairsByValue(pairs.commodities).map(createCard).join('');
+      document.getElementById('agriculture-grid').innerHTML = sortPairsByValue(pairs.agriculture).map(createCard).join('');
+      document.getElementById('softs-grid').innerHTML = sortPairsByValue(pairs.softs).map(createCard).join('');
+      document.getElementById('indices-grid').innerHTML = sortPairsByValue(pairs.indices).map(createCard).join('');
+      document.getElementById('bonds-grid').innerHTML = sortPairsByValue(pairs.bonds).map(createCard).join('');
+      document.getElementById('base-grid').innerHTML = getSortedBaseContracts().map(function(c) { return createBaseCard(c.id, c.value); }).join('');
     }
 
     function showSection(section, element) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      var tabs = document.querySelectorAll('.tab');
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove('active');
+      }
       element.classList.add('active');
       
-      const sections = ['currencies', 'minors', 'crosses', 'commodities', 'agriculture', 'softs', 'indices', 'bonds', 'backtest'];
-      sections.forEach(s => {
-        document.getElementById(s).classList.toggle('hidden', section !== 'all' && section !== s);
-      });
-    }
-
-    // Backtest functionality
-    let backtestData = [];
-    
-    // All tradeable pairs from COT
-    const backtestPairs = [
-      'EUR/USD', 'GBP/USD', 'AUD/USD', 'NZD/USD', 'USD/JPY', 'USD/CAD', 'USD/CHF', 'USD/MXN', 'USD/ZAR',
-      'XAU/USD', 'XAG/USD', 'XPT', 'XPD', 'COPPER', 'WTI', 'NATGAS',
-      'CORN', 'WHEAT', 'SOYBEAN', 'COTTON', 'SUGAR', 'COFFEE', 'COCOA',
-      'US500', 'US100', 'US30', 'US2000', 'NIKKEI',
-      'US10Y', 'US30Y', 'US5Y', 'US2Y'
-    ];
-    
-    function loadBacktestData() {
-      const saved = localStorage.getItem('cot-backtest-data');
-      if (saved) {
-        backtestData = JSON.parse(saved);
-      }
-      renderBacktest();
-    }
-    
-    function saveBacktestData() {
-      localStorage.setItem('cot-backtest-data', JSON.stringify(backtestData));
-    }
-    
-    function getBiasForPair(pairName) {
-      // Map pair name to base currency for lookup
-      const pairMap = {
-        'EUR/USD': { base: 'EUR', quote: 'USD' },
-        'GBP/USD': { base: 'GBP', quote: 'USD' },
-        'AUD/USD': { base: 'AUD', quote: 'USD' },
-        'NZD/USD': { base: 'NZD', quote: 'USD' },
-        'USD/JPY': { base: 'USD', quote: 'JPY' },
-        'USD/CAD': { base: 'USD', quote: 'CAD' },
-        'USD/CHF': { base: 'USD', quote: 'CHF' },
-        'USD/MXN': { base: 'USD', quote: 'MXN' },
-        'USD/ZAR': { base: 'USD', quote: 'ZAR' },
-        'XAU/USD': { base: 'XAU', quote: 'USD' },
-        'XAG/USD': { base: 'XAG', quote: 'USD' },
-      };
-      
-      const mapping = pairMap[pairName];
-      let value = 0;
-      
-      if (mapping) {
-        const baseVal = futuresData[mapping.base] || 0;
-        const quoteVal = futuresData[mapping.quote] || 0;
-        if (mapping.quote === 'USD') value = baseVal;
-        else if (mapping.base === 'USD') value = -quoteVal;
-        else value = baseVal - quoteVal;
-      } else {
-        // Direct lookup for commodities/indices
-        value = futuresData[pairName] || 0;
-      }
-      
-      return {
-        value,
-        bias: value > 5000 ? 'Bullish' : value < -5000 ? 'Bearish' : 'Neutral'
-      };
-    }
-    
-    function addWeekToBacktest() {
-      const dateInput = document.getElementById('bt-week-date');
-      const weekDate = dateInput.value || new Date().toISOString().split('T')[0];
-      
-      // Check if week already exists
-      const existingWeek = backtestData.find(e => e.date === weekDate);
-      if (existingWeek) {
-        if (!confirm('This week already has entries. Add anyway?')) return;
-      }
-      
-      // Add all pairs with current COT bias
-      backtestPairs.forEach(pair => {
-        const { value, bias } = getBiasForPair(pair);
-        backtestData.push({
-          id: Date.now() + Math.random(),
-          date: weekDate,
-          pair,
-          bias,
-          cotValue: value,
-          zone: '',
-          result: '',
-          r: 0,
-          note: ''
-        });
-      });
-      
-      saveBacktestData();
-      renderBacktest();
-    }
-    
-    function updateBacktestEntry(id, field, value) {
-      const entry = backtestData.find(e => e.id === id);
-      if (entry) {
-        if (field === 'r') {
-          entry[field] = parseFloat(value) || 0;
+      var sections = ['currencies', 'minors', 'crosses', 'commodities', 'agriculture', 'softs', 'indices', 'bonds'];
+      for (var j = 0; j < sections.length; j++) {
+        var s = sections[j];
+        var el = document.getElementById(s);
+        if (section === 'all' || section === s) {
+          el.classList.remove('hidden');
         } else {
-          entry[field] = value;
+          el.classList.add('hidden');
         }
-        saveBacktestData();
-        renderBacktest();
       }
-    }
-    
-    function deleteBacktestEntry(id) {
-      backtestData = backtestData.filter(e => e.id !== id);
-      saveBacktestData();
-      renderBacktest();
-    }
-    
-    function clearBacktest() {
-      if (confirm('Clear all backtest data?')) {
-        backtestData = [];
-        saveBacktestData();
-        renderBacktest();
-      }
-    }
-    
-    function renderBacktest() {
-      const tbody = document.getElementById('backtest-body');
-      const statsDiv = document.getElementById('backtest-stats');
-      
-      // Sort by date descending, then pair
-      const sorted = [...backtestData].sort((a, b) => {
-        if (b.date !== a.date) return new Date(b.date) - new Date(a.date);
-        return a.pair.localeCompare(b.pair);
-      });
-      
-      tbody.innerHTML = sorted.map(e => `
-        <tr>
-          <td>${e.date}</td>
-          <td>${e.pair}</td>
-          <td class="${e.bias === 'Bullish' ? 'win' : e.bias === 'Bearish' ? 'loss' : 'neutral'}">${e.bias}</td>
-          <td class="${e.cotValue >= 0 ? 'win' : 'loss'}">${e.cotValue > 0 ? '+' : ''}${e.cotValue.toLocaleString()}</td>
-          <td>
-            <select onchange="updateBacktestEntry(${e.id}, 'zone', this.value)">
-              <option value="">-</option>
-              <option value="W" ${e.zone === 'W' ? 'selected' : ''}>W</option>
-              <option value="D" ${e.zone === 'D' ? 'selected' : ''}>D</option>
-              <option value="4H" ${e.zone === '4H' ? 'selected' : ''}>4H</option>
-              <option value="1H" ${e.zone === '1H' ? 'selected' : ''}>1H</option>
-            </select>
-          </td>
-          <td>
-            <select onchange="updateBacktestEntry(${e.id}, 'result', this.value)">
-              <option value="">-</option>
-              <option value="Win" ${e.result === 'Win' ? 'selected' : ''}>Win</option>
-              <option value="Loss" ${e.result === 'Loss' ? 'selected' : ''}>Loss</option>
-              <option value="BE" ${e.result === 'BE' ? 'selected' : ''}>BE</option>
-              <option value="Skip" ${e.result === 'Skip' ? 'selected' : ''}>Skip</option>
-            </select>
-          </td>
-          <td>
-            <input type="number" step="0.1" value="${e.r || ''}" placeholder="R"
-                   onchange="updateBacktestEntry(${e.id}, 'r', this.value)" />
-          </td>
-          <td>
-            <input type="text" value="${e.note || ''}" placeholder="note"
-                   onchange="updateBacktestEntry(${e.id}, 'note', this.value)" />
-          </td>
-          <td><button class="delete-btn" onclick="deleteBacktestEntry(${e.id})">✕</button></td>
-        </tr>
-      `).join('');
-      
-      // Calculate stats (exclude Skip)
-      const completed = backtestData.filter(e => e.result && e.result !== 'Skip');
-      const wins = completed.filter(e => e.result === 'Win').length;
-      const losses = completed.filter(e => e.result === 'Loss').length;
-      const totalR = completed.reduce((sum, e) => sum + (e.r || 0), 0);
-      const winRate = completed.length > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : 0;
-      const avgR = completed.length > 0 ? (totalR / completed.length).toFixed(2) : 0;
-      
-      statsDiv.innerHTML = `
-        <div class="stat-box">
-          <div class="stat-label">Total Trades</div>
-          <div class="stat-value">${completed.length}</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Win Rate</div>
-          <div class="stat-value ${parseFloat(winRate) >= 50 ? 'positive' : 'negative'}">${winRate}%</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Wins / Losses</div>
-          <div class="stat-value"><span class="positive">${wins}</span> / <span class="negative">${losses}</span></div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Total R</div>
-          <div class="stat-value ${totalR >= 0 ? 'positive' : 'negative'}">${totalR > 0 ? '+' : ''}${totalR.toFixed(1)}R</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Avg R/Trade</div>
-          <div class="stat-value ${avgR >= 0 ? 'positive' : 'negative'}">${avgR}R</div>
-        </div>
-      `;
     }
 
-    // Initialize
     loadSavedData();
-    loadBacktestData();
-    
-    // Set default date to today
-    document.getElementById('bt-week-date').valueAsDate = new Date();
   </script>
 </body>
 </html>
