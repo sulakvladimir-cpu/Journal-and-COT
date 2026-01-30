@@ -2518,31 +2518,80 @@ var reader=new FileReader();
 reader.onload=function(e){
 try{
 var data=JSON.parse(e.target.result);
-if(!data.trades){showToast('Invalid backup file','error');return}
-if(!confirm('Import '+data.trades.length+' trades? This will MERGE with existing data.')){return}
+// Accept files with trades OR backtests
+if(!data.trades && !data.backtests){
+showToast('Invalid file - no trades or backtests found','error');
+return;
+}
+// Build confirmation message
+var msg='Import from '+(data.source||'backup')+'?\n\n';
+if(data.trades) msg+='• '+data.trades.length+' trades\n';
+if(data.backtests) msg+='• '+data.backtests.length+' backtests\n';
+if(data.strategies) msg+='• '+data.strategies.length+' strategies\n';
+if(data.accounts) msg+='• '+data.accounts.length+' accounts\n';
+msg+='\nThis will MERGE with existing data.';
+if(!confirm(msg)) return;
+
+var imported={trades:0,backtests:0,strategies:0,accounts:0};
+
+// Import strategies first (needed for backtest references)
+if(data.strategies){
+var existingStratIds=strategies.map(function(s){return s.id});
+var newStrats=data.strategies.filter(function(s){return existingStratIds.indexOf(s.id)===-1});
+newStrats.forEach(function(s){strategies.push(s)});
+imported.strategies=newStrats.length;
+localStorage.setItem('sdStrategies',JSON.stringify(strategies));
+}
+
+// Import trades if present
+if(data.trades){
 var existingIds=trades.map(function(t){return t.id});
 var newTrades=data.trades.filter(function(t){return existingIds.indexOf(t.id)===-1});
 trades=trades.concat(newTrades);
+imported.trades=newTrades.length;
+saveTrades();
+}
+
+// Import backtests if present (COT Dashboard exports)
+if(data.backtests){
+var existingBtIds=backtests.map(function(b){return b.id});
+var newBacktests=data.backtests.filter(function(b){return existingBtIds.indexOf(b.id)===-1});
+backtests=backtests.concat(newBacktests);
+imported.backtests=newBacktests.length;
+localStorage.setItem('sdBacktests',JSON.stringify(backtests));
+}
+
+// Import accounts if present
 if(data.accounts){
 var existingAccIds=accounts.map(function(a){return a.id});
-data.accounts.forEach(function(a){if(existingAccIds.indexOf(a.id)===-1)accounts.push(a)});
-}
-if(data.strategies){
-var existingStratIds=strategies.map(function(s){return s.id});
-data.strategies.forEach(function(s){if(existingStratIds.indexOf(s.id)===-1)strategies.push(s)});
-}
-saveTrades();
+var newAccounts=data.accounts.filter(function(a){return existingAccIds.indexOf(a.id)===-1});
+newAccounts.forEach(function(a){accounts.push(a)});
+imported.accounts=newAccounts.length;
 localStorage.setItem('sdAccounts',JSON.stringify(accounts));
-localStorage.setItem('sdStrategies',JSON.stringify(strategies));
+}
+
 updateAccountSelectors();
 updateStrategySelectors();
 updateAll();
-showToast('Imported '+newTrades.length+' new trades!');
-}catch(err){showToast('Error reading file','error')}
+
+// Show detailed success message
+var resultMsg='Imported: ';
+var parts=[];
+if(imported.trades) parts.push(imported.trades+' trades');
+if(imported.backtests) parts.push(imported.backtests+' backtests');
+if(imported.strategies) parts.push(imported.strategies+' strategies');
+if(imported.accounts) parts.push(imported.accounts+' accounts');
+resultMsg+=parts.length?parts.join(', '):'nothing new (duplicates skipped)';
+showToast(resultMsg);
+
+}catch(err){
+console.error('Import error:',err);
+showToast('Error reading file','error');
+}
 };
 reader.readAsText(file);
-event.target.value=''}
-
+event.target.value='';
+}
 function showToast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'');setTimeout(function(){t.classList.remove('show')},3000)}
 
 function calculateZoneScore(){
