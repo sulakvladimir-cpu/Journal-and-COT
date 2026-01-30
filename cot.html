@@ -94,9 +94,8 @@
                 border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center; }
     .info-box p { color: #93c5fd; font-size: 0.85rem; }
     
-    .export-box { background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; 
-                  border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center; }
-    .export-box p { color: #86efac; font-size: 0.85rem; margin-bottom: 10px; }
+    .nav-link { color: #60a5fa; text-decoration: none; margin-left: 15px; }
+    .nav-link:hover { text-decoration: underline; }
     
     @media (max-width: 768px) {
       .grid { grid-template-columns: 1fr; }
@@ -114,12 +113,9 @@
     </header>
     
     <div class="info-box">
-      <p>🆓 <strong>No API key required!</strong> Data fetched directly from official CFTC Public Reporting API</p>
-    </div>
-    
-    <div class="export-box">
-      <p>📥 <strong>Export to Journal:</strong> Download COT data as backtest entries for your Trading Journal</p>
-      <button class="btn btn-success" onclick="exportToJournal()">📥 Download for Journal Import</button>
+      <p>🆓 <strong>No API key required!</strong> Data fetched directly from official CFTC Public Reporting API
+        <a href="journal.html" class="nav-link">📝 Open Trading Journal</a>
+      </p>
     </div>
     
     <div class="controls">
@@ -127,6 +123,7 @@
         <span id="fetch-btn-text">🔄 Fetch Latest Data</span>
       </button>
       <button class="btn btn-secondary" onclick="clearCache()">🗑️ Clear Cache</button>
+      <button class="btn btn-success" onclick="exportToJournal()">📥 Export for Journal</button>
     </div>
     
     <div id="status" class="status hidden"></div>
@@ -195,8 +192,10 @@
   </div>
 
   <script>
+    // CFTC API Endpoint - Futures Only
     const API_FUTURES_ONLY = 'https://publicreporting.cftc.gov/resource/6dca-aqww.json';
     
+    // Contract mappings - Using EXACT contract names from CFTC reports
     const CONTRACT_MAP = {
       DXY: { search: 'U.S. DOLLAR INDEX', exchange: 'ICE FUTURES U.S.', code: '098662' },
       EUR: { search: 'EURO FX', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '099741' },
@@ -218,10 +217,10 @@
       CORN: { search: 'CORN', exchange: 'CHICAGO BOARD OF TRADE', code: '002602' },
       WHEAT: { search: 'WHEAT-SRW', exchange: 'CHICAGO BOARD OF TRADE', code: '001602' },
       SOYBEAN: { search: 'SOYBEANS', exchange: 'CHICAGO BOARD OF TRADE', code: '005602' },
-      US500: { search: 'E-MINI S&P 500', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '13874A' },
-      US100: { search: 'NASDAQ MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '209742' },
+      US500: { search: 'E-MINI S&P 500', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '13874A', exactMatch: 'E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE' },
+      US100: { search: 'NASDAQ MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '209742', exactMatch: 'NASDAQ MINI - CHICAGO MERCANTILE EXCHANGE' },
       US30: { search: 'DJIA', exchange: 'CHICAGO BOARD OF TRADE', code: '124603' },
-      US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '239742' },
+      US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '239742', exactMatch: 'RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE' },
       NIKKEI: { search: 'NIKKEI STOCK AVERAGE', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '240743' },
       US10Y: { search: 'UST 10Y NOTE', exchange: 'CHICAGO BOARD OF TRADE', code: '043602' },
       US30Y: { search: 'UST BOND', exchange: 'CHICAGO BOARD OF TRADE', code: '020601' },
@@ -233,6 +232,7 @@
       COCOA: { search: 'COCOA', exchange: 'ICE FUTURES U.S.', code: '073732' },
     };
 
+    // Data storage
     let futuresData = {
       DXY: 0, EUR: 0, GBP: 0, JPY: 0, AUD: 0, CAD: 0, NZD: 0, CHF: 0, MXN: 0, ZAR: 0,
       XAU: 0, XAG: 0, XPT: 0, XPD: 0, COPPER: 0, WTI: 0, NATGAS: 0,
@@ -327,15 +327,14 @@
     };
 
     // ============================================
-    // EXPORT TO JOURNAL FUNCTION
+    // EXPORT TO JOURNAL FUNCTION (ADDED)
     // ============================================
     function exportToJournal() {
-      var backtests = [];
-      var timestamp = Date.now();
-      var exportDate = reportDate || new Date().toISOString().split('T')[0];
+      const backtests = [];
+      const timestamp = Date.now();
+      const exportDate = reportDate || new Date().toISOString().split('T')[0];
       
-      // Create COT Weekly Bias strategy
-      var cotStrategy = {
+      const cotStrategy = {
         id: 'strat_cot_weekly',
         name: 'COT Weekly Bias',
         description: 'Trades based on CFTC Commitment of Traders weekly positioning data',
@@ -347,31 +346,21 @@
         color: '#3b82f6'
       };
       
-      // Get all pairs
-      var allPairs = [].concat(
-        pairs.currencies,
-        pairs.crosses,
-        pairs.commodities,
-        pairs.agriculture,
-        pairs.softs,
-        pairs.indices,
-        pairs.bonds
-      );
+      const allPairs = [
+        ...pairs.currencies, ...pairs.crosses, ...pairs.commodities,
+        ...pairs.agriculture, ...pairs.softs, ...pairs.indices, ...pairs.bonds
+      ];
       
-      allPairs.forEach(function(pairData, index) {
-        var value = calculatePairValue(pairData);
-        
-        // Only export pairs with significant positioning
+      allPairs.forEach((pairData, index) => {
+        const value = calculatePairValue(pairData);
         if (Math.abs(value) > 1000) {
-          var direction = value > 0 ? 'Long' : 'Short';
-          var sentiment = value > 5000 ? 'Strong Bullish' : value > 0 ? 'Bullish' : value < -5000 ? 'Strong Bearish' : 'Bearish';
-          var pairName = pairData.pair.replace('/', '');
-          
+          const direction = value > 0 ? 'Long' : 'Short';
+          const sentiment = value > 5000 ? 'Strong Bullish' : value > 0 ? 'Bullish' : value < -5000 ? 'Strong Bearish' : 'Bearish';
           backtests.push({
             id: 'bt_cot_' + timestamp + '_' + index,
             strategy: 'strat_cot_weekly',
             date: exportDate,
-            pair: pairName,
+            pair: pairData.pair.replace('/', ''),
             direction: direction,
             result: 'Win',
             rr: Math.abs(value) > 10000 ? 2.0 : 1.5,
@@ -380,8 +369,7 @@
         }
       });
       
-      // Create export object matching journal import format
-      var exportData = {
+      const exportData = {
         trades: [],
         accounts: [],
         strategies: [cotStrategy],
@@ -391,9 +379,8 @@
         reportDate: reportDate
       };
       
-      // Download as JSON
-      var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      var a = document.createElement('a');
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'cot_journal_export_' + exportDate + '.json';
       a.click();
@@ -402,107 +389,142 @@
     }
 
     function loadSavedData() {
-      var saved = localStorage.getItem('cot-dashboard-v3-fixed');
+      const saved = localStorage.getItem('cot-dashboard-v3-fixed');
       if (saved) {
-        var parsed = JSON.parse(saved);
+        const parsed = JSON.parse(saved);
         futuresData = parsed.futuresData || futuresData;
         reportDate = parsed.reportDate || reportDate;
         if (parsed.fetchedAt) {
           document.getElementById('last-updated').textContent = 
-            'Last fetched: ' + new Date(parsed.fetchedAt).toLocaleString();
+            `Last fetched: ${new Date(parsed.fetchedAt).toLocaleString()}`;
         }
       }
       updateUI();
     }
 
     function showStatus(message, type) {
-      var status = document.getElementById('status');
+      const status = document.getElementById('status');
       status.textContent = message;
-      status.className = 'status ' + type;
+      status.className = `status ${type}`;
     }
 
     async function fetchContractData(id, config) {
-      var whereClause = config.code 
-        ? "cftc_contract_market_code = '" + config.code + "'"
-        : "market_and_exchange_names like '%" + config.search + "%'";
+      // Build query - use exactMatch first, then code, then search
+      let whereClause;
+      if (config.exactMatch) {
+        whereClause = `market_and_exchange_names = '${config.exactMatch}'`;
+      } else if (config.code) {
+        whereClause = `cftc_contract_market_code = '${config.code}'`;
+      } else {
+        whereClause = `market_and_exchange_names like '%${config.search}%' AND market_and_exchange_names like '%${config.exchange}%'`;
+      }
       
-      var query = new URLSearchParams({
+      const query = new URLSearchParams({
         '$where': whereClause,
         '$order': 'report_date_as_yyyy_mm_dd DESC',
         '$limit': '5'
       });
       
-      var response = await fetch(API_FUTURES_ONLY + '?' + query);
-      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const url = `${API_FUTURES_ONLY}?${query}`;
+      console.log(`Fetching ${id}:`, url);
       
-      var data = await response.json();
+      const response = await fetch(url);
       
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      let data = await response.json();
+      console.log(`${id} raw data:`, data);
+      
+      // For Gold/Silver, exclude MICRO contracts
       if (id === 'XAU' || id === 'XAG') {
-        data = data.filter(function(d) { return !d.market_and_exchange_names.includes('MICRO'); });
+        data = data.filter(d => !d.market_and_exchange_names.includes('MICRO'));
       }
       
-      if (data.length < 2) return null;
+      if (data.length < 2) {
+        console.warn(`${id}: Not enough data points (got ${data.length})`);
+        return null;
+      }
       
-      var latest = data[0];
-      var previous = data[1];
+      const latest = data[0];
+      const previous = data[1];
       
-      var currentLong = parseInt(latest.noncomm_positions_long_all || 0);
-      var currentShort = parseInt(latest.noncomm_positions_short_all || 0);
-      var prevLong = parseInt(previous.noncomm_positions_long_all || 0);
-      var prevShort = parseInt(previous.noncomm_positions_short_all || 0);
+      console.log(`${id} contract name:`, latest.market_and_exchange_names);
       
-      var longChange = currentLong - prevLong;
-      var shortChange = currentShort - prevShort;
-      var netChange = longChange - shortChange;
+      // Always calculate from positions for accuracy
+      const currentLong = parseInt(latest.noncomm_positions_long_all || 0);
+      const currentShort = parseInt(latest.noncomm_positions_short_all || 0);
+      const prevLong = parseInt(previous.noncomm_positions_long_all || 0);
+      const prevShort = parseInt(previous.noncomm_positions_short_all || 0);
+      
+      const longChange = currentLong - prevLong;
+      const shortChange = currentShort - prevShort;
+      const netChange = longChange - shortChange;
+      
+      console.log(`${id} calculation:`, {
+        currentLong, prevLong, longChange,
+        currentShort, prevShort, shortChange,
+        netChange
+      });
       
       return {
-        netChange: netChange,
+        netChange,
         reportDate: latest.report_date_as_yyyy_mm_dd,
         contractName: latest.market_and_exchange_names
       };
     }
 
     async function fetchAllData() {
-      var btn = document.getElementById('fetch-btn');
-      var btnText = document.getElementById('fetch-btn-text');
+      const btn = document.getElementById('fetch-btn');
+      const btnText = document.getElementById('fetch-btn-text');
       btn.disabled = true;
       btnText.innerHTML = '<span class="spinner"></span> Fetching...';
-      showStatus('Fetching data from CFTC API...', 'loading');
+      showStatus('Fetching data from CFTC API (Futures Only)...', 'loading');
 
-      var latestDate = '';
-      var successCount = 0;
+      let latestDate = '';
+      let successCount = 0;
+      let errorCount = 0;
+      const errors = [];
 
       try {
-        for (var id in CONTRACT_MAP) {
+        for (const [id, config] of Object.entries(CONTRACT_MAP)) {
           try {
-            var result = await fetchContractData(id, CONTRACT_MAP[id]);
+            const result = await fetchContractData(id, config);
             if (result) {
               futuresData[id] = result.netChange;
               if (result.reportDate > latestDate) latestDate = result.reportDate;
               successCount++;
+              console.log(`✅ ${id}: ${result.netChange} (${result.contractName})`);
             }
           } catch (err) {
-            console.error(id + ':', err);
+            console.error(`❌ ${id}:`, err);
+            errors.push(id);
+            errorCount++;
           }
-          await new Promise(function(r) { setTimeout(r, 100); });
+          // Small delay to avoid rate limiting
+          await new Promise(r => setTimeout(r, 100));
         }
 
         reportDate = latestDate || reportDate;
         
         localStorage.setItem('cot-dashboard-v3-fixed', JSON.stringify({
-          futuresData: futuresData,
-          reportDate: reportDate,
+          futuresData, reportDate,
           fetchedAt: new Date().toISOString()
         }));
 
         document.getElementById('last-updated').textContent = 
-          'Last fetched: ' + new Date().toLocaleString();
+          `Last fetched: ${new Date().toLocaleString()}`;
 
         updateUI();
-        showStatus('Successfully updated ' + successCount + ' contracts!', 'success');
+        
+        if (errorCount > 0) {
+          showStatus(`Updated ${successCount} contracts. Errors: ${errors.join(', ')}`, 'success');
+        } else {
+          showStatus(`Successfully updated all ${successCount} contracts!`, 'success');
+        }
 
       } catch (error) {
-        showStatus('Error: ' + error.message, 'error');
+        console.error('Fetch error:', error);
+        showStatus(`Error: ${error.message}`, 'error');
       } finally {
         btn.disabled = false;
         btnText.textContent = '🔄 Fetch Latest Data';
@@ -515,8 +537,8 @@
     }
 
     function calculatePairValue(pair) {
-      var baseVal = futuresData[pair.base] || 0;
-      var quoteVal = pair.quote ? (futuresData[pair.quote] || 0) : 0;
+      const baseVal = futuresData[pair.base] || 0;
+      const quoteVal = pair.quote ? (futuresData[pair.quote] || 0) : 0;
       
       if (!pair.quote) return baseVal;
       if (pair.quote === 'USD') return baseVal;
@@ -535,74 +557,101 @@
     }
 
     function createCard(pair) {
-      var value = calculatePairValue(pair);
-      var sentiment = getSentimentLabel(value);
-      var maxVal = 50000;
-      var barWidth = Math.min(Math.abs(value) / maxVal * 100, 100);
+      const value = calculatePairValue(pair);
+      const sentiment = getSentimentLabel(value);
+      const maxVal = 50000;
+      const barWidth = Math.min(Math.abs(value) / maxVal * 100, 100);
       
-      return '<div class="card"><div class="card-header"><span class="pair-name">' + pair.pair + '</span><span class="sentiment ' + sentiment.class + '">' + sentiment.label + '</span></div><div class="value-box"><div class="value-label">📊 Net Change</div><div class="value-number ' + (value >= 0 ? 'positive' : 'negative') + '">' + formatNumber(value) + '</div><div class="bar-container"><div class="bar ' + (value >= 0 ? 'positive' : 'negative') + '" style="width: ' + barWidth + '%"></div></div></div></div>';
+      return `
+        <div class="card">
+          <div class="card-header">
+            <span class="pair-name">${pair.pair}</span>
+            <span class="sentiment ${sentiment.class}">${sentiment.label}</span>
+          </div>
+          <div class="value-box">
+            <div class="value-label">📊 Net Change</div>
+            <div class="value-number ${value >= 0 ? 'positive' : 'negative'}">${formatNumber(value)}</div>
+            <div class="bar-container">
+              <div class="bar ${value >= 0 ? 'positive' : 'negative'}" style="width: ${barWidth}%"></div>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
     function createBaseCard(id, value) {
-      var names = {
+      const names = {
         DXY: 'USD Index', EUR: 'Euro', GBP: 'Pound', JPY: 'Yen', AUD: 'Aussie', CAD: 'Loonie',
         NZD: 'Kiwi', CHF: 'Franc', MXN: 'Peso', ZAR: 'Rand',
         XAU: 'Gold', XAG: 'Silver', XPT: 'Platinum', XPD: 'Palladium', COPPER: 'Copper',
-        WTI: 'Oil', NATGAS: 'Nat Gas', CORN: 'Corn', WHEAT: 'Wheat', SOYBEAN: 'Soybeans',
+        WTI: 'Oil', NATGAS: 'Nat Gas',
+        CORN: 'Corn', WHEAT: 'Wheat', SOYBEAN: 'Soybeans',
         COTTON: 'Cotton', SUGAR: 'Sugar', COFFEE: 'Coffee', COCOA: 'Cocoa',
         US500: 'S&P 500', US100: 'Nasdaq', US30: 'Dow', US2000: 'Russell', NIKKEI: 'Nikkei',
         US10Y: '10Y Treasury', US30Y: '30Y Treasury', US5Y: '5Y Treasury', US2Y: '2Y Treasury'
       };
-      return '<div class="base-card"><div class="base-id">' + id + '</div><div class="base-value ' + (value >= 0 ? 'positive' : 'negative') + '">' + formatNumber(value) + '</div><div style="font-size: 0.7rem; color: #6b7280; margin-top: 4px;">' + (names[id] || '') + '</div></div>';
+      return `
+        <div class="base-card">
+          <div class="base-id">${id}</div>
+          <div class="base-value ${value >= 0 ? 'positive' : 'negative'}">${formatNumber(value)}</div>
+          <div style="font-size: 0.7rem; color: #6b7280; margin-top: 4px;">${names[id] || ''}</div>
+        </div>
+      `;
     }
 
+    // Sort pairs by calculated value (most positive to most negative)
     function sortPairsByValue(pairsArray) {
-      return pairsArray.slice().sort(function(a, b) {
-        return calculatePairValue(b) - calculatePairValue(a);
+      return [...pairsArray].sort((a, b) => {
+        const valA = calculatePairValue(a);
+        const valB = calculatePairValue(b);
+        return valB - valA; // Descending order (most positive first)
       });
     }
 
+    // Sort base contracts by value
     function getSortedBaseContracts() {
-      var entries = [];
-      for (var id in futuresData) {
-        entries.push({ id: id, value: futuresData[id] });
-      }
-      return entries.sort(function(a, b) { return b.value - a.value; });
+      return Object.entries(futuresData)
+        .sort((a, b) => b[1] - a[1]) // Sort by value descending
+        .map(([id, value]) => ({ id, value }));
     }
 
     function updateUI() {
-      document.getElementById('report-date').textContent = 'Report Date: ' + (reportDate || 'Not loaded');
+      document.getElementById('report-date').textContent = `Report Date: ${reportDate || 'Not loaded'}`;
       
-      document.getElementById('currency-grid').innerHTML = sortPairsByValue(pairs.currencies).map(createCard).join('');
-      document.getElementById('minors-grid').innerHTML = sortPairsByValue(pairs.minors).map(createCard).join('');
-      document.getElementById('crosses-grid').innerHTML = sortPairsByValue(pairs.crosses).map(createCard).join('');
-      document.getElementById('commodities-grid').innerHTML = sortPairsByValue(pairs.commodities).map(createCard).join('');
-      document.getElementById('agriculture-grid').innerHTML = sortPairsByValue(pairs.agriculture).map(createCard).join('');
-      document.getElementById('softs-grid').innerHTML = sortPairsByValue(pairs.softs).map(createCard).join('');
-      document.getElementById('indices-grid').innerHTML = sortPairsByValue(pairs.indices).map(createCard).join('');
-      document.getElementById('bonds-grid').innerHTML = sortPairsByValue(pairs.bonds).map(createCard).join('');
-      document.getElementById('base-grid').innerHTML = getSortedBaseContracts().map(function(c) { return createBaseCard(c.id, c.value); }).join('');
+      // Sort and render each section
+      document.getElementById('currency-grid').innerHTML = 
+        sortPairsByValue(pairs.currencies).map(createCard).join('');
+      document.getElementById('minors-grid').innerHTML = 
+        sortPairsByValue(pairs.minors).map(createCard).join('');
+      document.getElementById('crosses-grid').innerHTML = 
+        sortPairsByValue(pairs.crosses).map(createCard).join('');
+      document.getElementById('commodities-grid').innerHTML = 
+        sortPairsByValue(pairs.commodities).map(createCard).join('');
+      document.getElementById('agriculture-grid').innerHTML = 
+        sortPairsByValue(pairs.agriculture).map(createCard).join('');
+      document.getElementById('softs-grid').innerHTML = 
+        sortPairsByValue(pairs.softs).map(createCard).join('');
+      document.getElementById('indices-grid').innerHTML = 
+        sortPairsByValue(pairs.indices).map(createCard).join('');
+      document.getElementById('bonds-grid').innerHTML = 
+        sortPairsByValue(pairs.bonds).map(createCard).join('');
+      
+      // Sort base contracts from most positive to most negative
+      document.getElementById('base-grid').innerHTML = 
+        getSortedBaseContracts().map(({ id, value }) => createBaseCard(id, value)).join('');
     }
 
     function showSection(section, element) {
-      var tabs = document.querySelectorAll('.tab');
-      for (var i = 0; i < tabs.length; i++) {
-        tabs[i].classList.remove('active');
-      }
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       element.classList.add('active');
       
-      var sections = ['currencies', 'minors', 'crosses', 'commodities', 'agriculture', 'softs', 'indices', 'bonds'];
-      for (var j = 0; j < sections.length; j++) {
-        var s = sections[j];
-        var el = document.getElementById(s);
-        if (section === 'all' || section === s) {
-          el.classList.remove('hidden');
-        } else {
-          el.classList.add('hidden');
-        }
-      }
+      const sections = ['currencies', 'minors', 'crosses', 'commodities', 'agriculture', 'softs', 'indices', 'bonds'];
+      sections.forEach(s => {
+        document.getElementById(s).classList.toggle('hidden', section !== 'all' && section !== s);
+      });
     }
 
+    // Initialize
     loadSavedData();
   </script>
 </body>
