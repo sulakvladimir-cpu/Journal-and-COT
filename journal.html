@@ -328,7 +328,7 @@ tr:hover{background:rgba(255,255,255,.02)}
 </div>
 
 <div id="backtestStats" class="stats-grid" style="margin-bottom:20px"></div>
-<div style="overflow-x:auto"><table><thead><tr><th>Strategy</th><th>Date</th><th>Pair</th><th>Direction</th><th>Result</th><th>R:R</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="backtestTable"></tbody></table></div>
+<div style="overflow-x:auto"><table><thead><tr><th>Strategy</th><th>Date</th><th>Pair</th><th>Dir</th><th>COT</th><th>Result</th><th>R:R</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="backtestTable"></tbody></table></div>
 </div>
 </div>
 </div>
@@ -357,15 +357,17 @@ tr:hover{background:rgba(255,255,255,.02)}
 <div style="display:flex;gap:10px"><button class="btn btn-primary" onclick="saveStrategy()">💾 Save Strategy</button><button class="btn btn-secondary" onclick="closeModal('strategyModal')">Cancel</button></div>
 </div></div></div>
 
-<div class="modal" id="backtestModal"><div class="modal-content" style="max-width:600px"><div class="modal-header"><h3>🧪 Add Backtest Trade</h3><button class="modal-close" onclick="closeModal('backtestModal')">×</button></div><div class="modal-body">
+<div class="modal" id="backtestModal"><div class="modal-content" style="max-width:650px"><div class="modal-header"><h3>🧪 Add Backtest Trade</h3><button class="modal-close" onclick="closeModal('backtestModal')">×</button></div><div class="modal-body">
 <input type="hidden" id="editBacktestId">
+<input type="hidden" id="backtestCotValue">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
 <div class="form-group"><label>Strategy</label><select id="backtestStrategy" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></select></div>
 <div class="form-group"><label>Date</label><input type="date" id="backtestDate" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
-<div class="form-group"><label>Pair</label><input type="text" id="backtestPair" placeholder="EURUSD" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+<div class="form-group" style="grid-column:span 2"><label>Pair (with COT Bias)</label><select id="backtestPair" onchange="updateCotValue()" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:monospace"></select></div>
 <div class="form-group"><label>Direction</label><select id="backtestDirection" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option>Long</option><option>Short</option></select></div>
 <div class="form-group"><label>Result</label><select id="backtestResult" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"><option>Win</option><option>Loss</option><option>BE</option></select></div>
 <div class="form-group"><label>R:R Achieved</label><input type="number" id="backtestRR" step="0.1" placeholder="2.5" style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text)"></div>
+<div class="form-group"><label>COT Value</label><div id="cotValueDisplay" style="padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-weight:600">-</div></div>
 </div>
 <div class="form-group" style="margin-top:15px"><label>Notes</label><textarea id="backtestNotes" placeholder="What made this setup good/bad..." style="width:100%;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);min-height:60px"></textarea></div>
 <div style="display:flex;gap:10px;margin-top:20px"><button class="btn btn-primary" onclick="saveBacktest()">💾 Save Backtest</button><button class="btn btn-secondary" onclick="closeModal('backtestModal')">Cancel</button></div>
@@ -385,15 +387,46 @@ let charts={},currentMonth=new Date();
 // ============================================
 // COT DATA FOR BACKTESTER
 // ============================================
+var cotDataCache=null;
+
 function loadCotForBacktest(){
 var saved=localStorage.getItem('cot-journal-export');
 var panel=document.getElementById('cotBacktestPanel');
-if(!saved||!panel){if(panel)panel.style.display='none';return}
-var cot=JSON.parse(saved);
+if(!saved){cotDataCache=null;if(panel)panel.style.display='none';return}
+cotDataCache=JSON.parse(saved);
+if(panel){
 panel.style.display='block';
-document.getElementById('cotBacktestDate').textContent='('+cot.date+')';
-var sorted=Object.entries(cot.pairs).filter(function(p){return Math.abs(p[1])>3000}).sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1])}).slice(0,24);
-document.getElementById('cotBacktestGrid').innerHTML=sorted.map(function(p){var pair=p[0],val=p[1],color=val>5000?'var(--green)':val<-5000?'var(--red)':'var(--text2)',bg=val>5000?'rgba(0,200,83,.15)':val<-5000?'rgba(255,23,68,.15)':'var(--bg2)',bias=val>5000?'🟢':val<-5000?'🔴':'⚪';return '<div style="background:'+bg+';padding:6px;border-radius:6px;text-align:center"><div style="font-size:.75rem;font-weight:600">'+bias+' '+pair+'</div><div style="color:'+color+';font-size:.8rem;font-weight:700">'+(val>0?'+':'')+Math.round(val/1000)+'k</div></div>'}).join('')}
+document.getElementById('cotBacktestDate').textContent='('+cotDataCache.date+')';
+var sorted=Object.entries(cotDataCache.pairs).filter(function(p){return Math.abs(p[1])>3000}).sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1])}).slice(0,24);
+document.getElementById('cotBacktestGrid').innerHTML=sorted.map(function(p){var pair=p[0],val=p[1],color=val>5000?'var(--green)':val<-5000?'var(--red)':'var(--text2)',bg=val>5000?'rgba(0,200,83,.15)':val<-5000?'rgba(255,23,68,.15)':'var(--bg2)',bias=val>5000?'🟢':val<-5000?'🔴':'⚪';return '<div style="background:'+bg+';padding:6px;border-radius:6px;text-align:center"><div style="font-size:.75rem;font-weight:600">'+bias+' '+pair+'</div><div style="color:'+color+';font-size:.8rem;font-weight:700">'+(val>0?'+':'')+Math.round(val/1000)+'k</div></div>'}).join('')}}
+
+function populateCotPairs(){
+var sel=document.getElementById('backtestPair');
+sel.innerHTML='<option value="">Select pair...</option>';
+if(!cotDataCache||!cotDataCache.pairs)return;
+var sorted=Object.entries(cotDataCache.pairs).sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1])});
+sorted.forEach(function(p){
+var pair=p[0],val=p[1];
+var bias=val>5000?'🟢':val<-5000?'🔴':'⚪';
+var display=pair+' '+bias+' '+(val>0?'+':'')+Math.round(val/1000)+'k';
+sel.innerHTML+='<option value="'+pair+'" data-cot="'+val+'">'+display+'</option>'});
+}
+
+function updateCotValue(){
+var sel=document.getElementById('backtestPair');
+var opt=sel.options[sel.selectedIndex];
+var val=opt?parseInt(opt.dataset.cot)||0:0;
+document.getElementById('backtestCotValue').value=val;
+var disp=document.getElementById('cotValueDisplay');
+if(val>5000){disp.innerHTML='<span style="color:var(--green)">🟢 Bullish +'+Math.round(val/1000)+'k</span>'}
+else if(val<-5000){disp.innerHTML='<span style="color:var(--red)">🔴 Bearish '+Math.round(val/1000)+'k</span>'}
+else{disp.innerHTML='<span style="color:var(--text2)">⚪ Neutral '+Math.round(val/1000)+'k</span>'}}
+
+function getCotAlignment(direction,cotVal){
+if(Math.abs(cotVal)<5000)return'neutral';
+if(direction==='Long'&&cotVal>5000)return'aligned';
+if(direction==='Short'&&cotVal<-5000)return'aligned';
+return'against'}
 
 document.addEventListener('DOMContentLoaded',function(){
 loadSettings();setDefaultDate();loadCotForBacktest();
@@ -490,10 +523,18 @@ function openStrategyEditor(id){document.getElementById('editStrategyId').value=
 function saveStrategy(){var name=document.getElementById('strategyName').value.trim();if(!name){showToast('Enter strategy name','error');return}var id=document.getElementById('editStrategyId').value||'strat_'+Date.now();var strategy={id:id,name:name,description:document.getElementById('strategyDesc').value,color:document.getElementById('strategyColor').value};var idx=strategies.findIndex(function(s){return s.id===id});if(idx!==-1)strategies[idx]=strategy;else strategies.push(strategy);localStorage.setItem('sdStrategies',JSON.stringify(strategies));updateStrategySelectors();updateStrategies();closeModal('strategyModal');showToast('Strategy saved!')}
 function deleteStrategy(id){if(!confirm('Delete this strategy?'))return;strategies=strategies.filter(function(s){return s.id!==id});localStorage.setItem('sdStrategies',JSON.stringify(strategies));updateStrategySelectors();updateStrategies();showToast('Strategy deleted')}
 
-function openBacktestModal(id){document.getElementById('editBacktestId').value='';document.getElementById('backtestDate').value=new Date().toISOString().split('T')[0];document.getElementById('backtestPair').value='';document.getElementById('backtestDirection').value='Long';document.getElementById('backtestResult').value='Win';document.getElementById('backtestRR').value='';document.getElementById('backtestNotes').value='';var stratSel=document.getElementById('backtestStrategy');stratSel.innerHTML='<option value="">Select strategy...</option>'+strategies.map(function(s){return '<option value="'+s.id+'">'+s.name+'</option>'}).join('');if(id){var bt=backtests.find(function(b){return b.id===id});if(bt){document.getElementById('editBacktestId').value=id;stratSel.value=bt.strategy||'';document.getElementById('backtestDate').value=bt.date||'';document.getElementById('backtestPair').value=bt.pair||'';document.getElementById('backtestDirection').value=bt.direction||'Long';document.getElementById('backtestResult').value=bt.result||'Win';document.getElementById('backtestRR').value=bt.rr||'';document.getElementById('backtestNotes').value=bt.notes||''}}openModal('backtestModal')}
-function saveBacktest(){var pair=document.getElementById('backtestPair').value.trim().toUpperCase();if(!pair){showToast('Enter pair','error');return}var id=document.getElementById('editBacktestId').value||'bt_'+Date.now();var bt={id:id,strategy:document.getElementById('backtestStrategy').value,date:document.getElementById('backtestDate').value,pair:pair,direction:document.getElementById('backtestDirection').value,result:document.getElementById('backtestResult').value,rr:parseFloat(document.getElementById('backtestRR').value)||0,notes:document.getElementById('backtestNotes').value};var idx=backtests.findIndex(function(b){return b.id===id});if(idx!==-1)backtests[idx]=bt;else backtests.unshift(bt);localStorage.setItem('sdBacktests',JSON.stringify(backtests));updateBacktests();closeModal('backtestModal');showToast('Backtest saved!')}
+function openBacktestModal(id){document.getElementById('editBacktestId').value='';document.getElementById('backtestDate').value=new Date().toISOString().split('T')[0];document.getElementById('backtestDirection').value='Long';document.getElementById('backtestResult').value='Win';document.getElementById('backtestRR').value='';document.getElementById('backtestNotes').value='';document.getElementById('backtestCotValue').value='0';document.getElementById('cotValueDisplay').innerHTML='-';var stratSel=document.getElementById('backtestStrategy');stratSel.innerHTML='<option value="">Select strategy...</option>'+strategies.map(function(s){return '<option value="'+s.id+'">'+s.name+'</option>'}).join('');populateCotPairs();if(id){var bt=backtests.find(function(b){return b.id===id});if(bt){document.getElementById('editBacktestId').value=id;stratSel.value=bt.strategy||'';document.getElementById('backtestDate').value=bt.date||'';document.getElementById('backtestPair').value=bt.pair||'';document.getElementById('backtestDirection').value=bt.direction||'Long';document.getElementById('backtestResult').value=bt.result||'Win';document.getElementById('backtestRR').value=bt.rr||'';document.getElementById('backtestNotes').value=bt.notes||'';document.getElementById('backtestCotValue').value=bt.cotValue||0;updateCotValue()}}openModal('backtestModal')}
+function saveBacktest(){var pair=document.getElementById('backtestPair').value;if(!pair){showToast('Select a pair','error');return}var id=document.getElementById('editBacktestId').value||'bt_'+Date.now();var cotVal=parseInt(document.getElementById('backtestCotValue').value)||0;var direction=document.getElementById('backtestDirection').value;var bt={id:id,strategy:document.getElementById('backtestStrategy').value,date:document.getElementById('backtestDate').value,pair:pair,direction:direction,result:document.getElementById('backtestResult').value,rr:parseFloat(document.getElementById('backtestRR').value)||0,cotValue:cotVal,cotAlignment:getCotAlignment(direction,cotVal),notes:document.getElementById('backtestNotes').value};var idx=backtests.findIndex(function(b){return b.id===id});if(idx!==-1)backtests[idx]=bt;else backtests.unshift(bt);localStorage.setItem('sdBacktests',JSON.stringify(backtests));updateBacktests();closeModal('backtestModal');showToast('Backtest saved!')}
 function deleteBacktest(id){if(!confirm('Delete this backtest?'))return;backtests=backtests.filter(function(b){return b.id!==id});localStorage.setItem('sdBacktests',JSON.stringify(backtests));updateBacktests();showToast('Deleted')}
-function updateBacktests(){var table=document.getElementById('backtestTable');var stats=document.getElementById('backtestStats');if(!backtests.length){table.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:30px">No backtests yet</td></tr>';stats.innerHTML='';return}var wins=backtests.filter(function(b){return b.result==='Win'}).length;var losses=backtests.filter(function(b){return b.result==='Loss'}).length;var winRate=backtests.length?(wins/backtests.length*100):0;var avgRR=backtests.filter(function(b){return b.rr>0}).reduce(function(s,b,i,a){return s+b.rr/a.length},0);stats.innerHTML='<div class="stat-card"><div class="stat-label">Total Backtests</div><div class="stat-value gold">'+backtests.length+'</div></div><div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value '+(winRate>=50?'positive':'negative')+'">'+winRate.toFixed(1)+'%</div></div><div class="stat-card"><div class="stat-label">Wins / Losses</div><div class="stat-value"><span class="positive">'+wins+'</span> / <span class="negative">'+losses+'</span></div></div><div class="stat-card"><div class="stat-label">Avg R:R</div><div class="stat-value gold">'+avgRR.toFixed(2)+'</div></div>';table.innerHTML=backtests.map(function(b){var strat=strategies.find(function(s){return s.id===b.strategy});return '<tr><td>'+(strat?'<span style="color:'+strat.color+'">'+strat.name+'</span>':'-')+'</td><td>'+b.date+'</td><td><strong>'+b.pair+'</strong></td><td><span class="badge badge-'+b.direction.toLowerCase()+'">'+b.direction+'</span></td><td><span class="badge badge-'+b.result.toLowerCase()+'">'+b.result+'</span></td><td>'+(b.rr?'1:'+b.rr.toFixed(1):'-')+'</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">'+(b.notes||'-')+'</td><td><div class="action-btns"><button class="action-btn edit" onclick="openBacktestModal(\''+b.id+'\')">✏️</button><button class="action-btn delete" onclick="deleteBacktest(\''+b.id+'\')">🗑️</button></div></td></tr>'}).join('')}
+function updateBacktests(){var table=document.getElementById('backtestTable');var stats=document.getElementById('backtestStats');if(!backtests.length){table.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:30px">No backtests yet</td></tr>';stats.innerHTML='';return}var wins=backtests.filter(function(b){return b.result==='Win'}).length;var losses=backtests.filter(function(b){return b.result==='Loss'}).length;var winRate=backtests.length?(wins/backtests.length*100):0;var avgRR=backtests.filter(function(b){return b.rr>0}).reduce(function(s,b,i,a){return s+b.rr/a.length},0);
+var aligned=backtests.filter(function(b){return b.cotAlignment==='aligned'});
+var alignedWins=aligned.filter(function(b){return b.result==='Win'}).length;
+var alignedWR=aligned.length?(alignedWins/aligned.length*100):0;
+var against=backtests.filter(function(b){return b.cotAlignment==='against'});
+var againstWins=against.filter(function(b){return b.result==='Win'}).length;
+var againstWR=against.length?(againstWins/against.length*100):0;
+stats.innerHTML='<div class="stat-card"><div class="stat-label">Total Backtests</div><div class="stat-value gold">'+backtests.length+'</div></div><div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value '+(winRate>=50?'positive':'negative')+'">'+winRate.toFixed(1)+'%</div></div><div class="stat-card"><div class="stat-label">Avg R:R</div><div class="stat-value gold">'+avgRR.toFixed(2)+'</div></div><div class="stat-card" style="border-color:var(--green)"><div class="stat-label">🟢 With COT ('+aligned.length+')</div><div class="stat-value '+(alignedWR>=50?'positive':'negative')+'">'+alignedWR.toFixed(0)+'%</div></div><div class="stat-card" style="border-color:var(--red)"><div class="stat-label">🔴 Against COT ('+against.length+')</div><div class="stat-value '+(againstWR>=50?'positive':'negative')+'">'+againstWR.toFixed(0)+'%</div></div>';
+table.innerHTML=backtests.map(function(b){var strat=strategies.find(function(s){return s.id===b.strategy});var cotDisp=b.cotValue?(b.cotValue>5000?'<span style="color:var(--green)">🟢+'+(b.cotValue/1000).toFixed(0)+'k</span>':b.cotValue<-5000?'<span style="color:var(--red)">🔴'+(b.cotValue/1000).toFixed(0)+'k</span>':'<span style="color:var(--text2)">⚪'+(b.cotValue/1000).toFixed(0)+'k</span>'):'-';var alignBadge=b.cotAlignment==='aligned'?'<span style="color:var(--green);font-size:.7rem"> ✓</span>':b.cotAlignment==='against'?'<span style="color:var(--red);font-size:.7rem"> ✗</span>':'';return '<tr><td>'+(strat?'<span style="color:'+strat.color+'">'+strat.name+'</span>':'-')+'</td><td>'+b.date+'</td><td><strong>'+b.pair+'</strong></td><td><span class="badge badge-'+b.direction.toLowerCase()+'">'+b.direction+'</span></td><td>'+cotDisp+alignBadge+'</td><td><span class="badge badge-'+b.result.toLowerCase()+'">'+b.result+'</span></td><td>'+(b.rr?'1:'+b.rr.toFixed(1):'-')+'</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">'+(b.notes||'-')+'</td><td><div class="action-btns"><button class="action-btn edit" onclick="openBacktestModal(\''+b.id+'\')">✏️</button><button class="action-btn delete" onclick="deleteBacktest(\''+b.id+'\')">🗑️</button></div></td></tr>'}).join('')}
 
 function openSettings(){document.getElementById('setLimit').value=settings.limit;document.getElementById('setRisk').value=settings.risk;document.getElementById('setAccount').value=settings.account;openModal('settingsModal')}
 function saveSettings(){settings.limit=parseFloat(document.getElementById('setLimit').value)||200;settings.risk=parseFloat(document.getElementById('setRisk').value)||50;settings.account=parseFloat(document.getElementById('setAccount').value)||10000;localStorage.setItem('sdSettings',JSON.stringify(settings));updateDailyLimit();showToast('Saved!')}
