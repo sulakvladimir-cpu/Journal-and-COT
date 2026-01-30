@@ -131,6 +131,7 @@
       <div class="tab" onclick="showSection('minors', this)">Strength</div>
       <div class="tab" onclick="showSection('crosses', this)">Crosses</div>
       <div class="tab" onclick="showSection('commodities', this)">Commodities</div>
+      <div class="tab" onclick="showSection('agriculture', this)">Agriculture</div>
       <div class="tab" onclick="showSection('indices', this)">Indices</div>
     </div>
     
@@ -152,6 +153,11 @@
     <div id="commodities" class="section">
       <div class="section-title">🛢️ Commodities (Sorted by Strength)</div>
       <div class="grid" id="commodities-grid"></div>
+    </div>
+    
+    <div id="agriculture" class="section">
+      <div class="section-title">🌾 Agriculture (Sorted by Strength)</div>
+      <div class="grid" id="agriculture-grid"></div>
     </div>
     
     <div id="indices" class="section">
@@ -184,19 +190,31 @@
       CAD: { search: 'CANADIAN DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '090741' },
       NZD: { search: 'NZ DOLLAR', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '112741' },
       CHF: { search: 'SWISS FRANC', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '092741' },
+      MXN: { search: 'MEXICAN PESO', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '095741' },
+      ZAR: { search: 'SO AFRICAN RAND', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '122741' },
       XAU: { search: 'GOLD', exchange: 'COMMODITY EXCHANGE INC', code: '088691' },
       XAG: { search: 'SILVER', exchange: 'COMMODITY EXCHANGE INC', code: '084691' },
+      XPT: { search: 'PLATINUM', exchange: 'NEW YORK MERCANTILE EXCHANGE', code: '076651' },
+      XPD: { search: 'PALLADIUM', exchange: 'NEW YORK MERCANTILE EXCHANGE', code: '075651' },
+      COPPER: { search: 'COPPER', exchange: 'COMMODITY EXCHANGE', code: '085692' },
       WTI: { search: 'CRUDE OIL, LIGHT SWEET', exchange: 'NEW YORK MERCANTILE EXCHANGE', code: '067651' },
+      NATGAS: { search: 'NAT GAS NYME', exchange: 'NEW YORK MERCANTILE EXCHANGE', code: '023651' },
+      CORN: { search: 'CORN', exchange: 'CHICAGO BOARD OF TRADE', code: '002602' },
+      WHEAT: { search: 'WHEAT-SRW', exchange: 'CHICAGO BOARD OF TRADE', code: '001602' },
+      SOYBEAN: { search: 'SOYBEANS', exchange: 'CHICAGO BOARD OF TRADE', code: '005602' },
       US500: { search: 'E-MINI S&P 500', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '13874A', exactMatch: 'E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE' },
       US100: { search: 'NASDAQ MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '209742', exactMatch: 'NASDAQ MINI - CHICAGO MERCANTILE EXCHANGE' },
       US30: { search: 'DJIA', exchange: 'CHICAGO BOARD OF TRADE', code: '124603' },
       US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '239742', exactMatch: 'RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE' },
+      NIKKEI: { search: 'NIKKEI STOCK AVERAGE', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '240743' },
     };
 
     // Data storage
     let futuresData = {
-      DXY: 0, EUR: 0, GBP: 0, JPY: 0, AUD: 0, CAD: 0, NZD: 0, CHF: 0,
-      XAU: 0, XAG: 0, WTI: 0, US500: 0, US100: 0, US30: 0, US2000: 0,
+      DXY: 0, EUR: 0, GBP: 0, JPY: 0, AUD: 0, CAD: 0, NZD: 0, CHF: 0, MXN: 0, ZAR: 0,
+      XAU: 0, XAG: 0, XPT: 0, XPD: 0, COPPER: 0, WTI: 0, NATGAS: 0,
+      CORN: 0, WHEAT: 0, SOYBEAN: 0,
+      US500: 0, US100: 0, US30: 0, US2000: 0, NIKKEI: 0,
     };
     
     let reportDate = '';
@@ -211,6 +229,8 @@
         { pair: 'USD/JPY', base: 'USD', quote: 'JPY' },
         { pair: 'USD/CAD', base: 'USD', quote: 'CAD' },
         { pair: 'USD/CHF', base: 'USD', quote: 'CHF' },
+        { pair: 'USD/MXN', base: 'USD', quote: 'MXN' },
+        { pair: 'USD/ZAR', base: 'USD', quote: 'ZAR' },
       ],
       minors: [
         { pair: 'EUR', base: 'EUR', quote: null },
@@ -220,6 +240,8 @@
         { pair: 'CAD', base: 'CAD', quote: null },
         { pair: 'NZD', base: 'NZD', quote: null },
         { pair: 'CHF', base: 'CHF', quote: null },
+        { pair: 'MXN', base: 'MXN', quote: null },
+        { pair: 'ZAR', base: 'ZAR', quote: null },
       ],
       crosses: [
         { pair: 'EUR/GBP', base: 'EUR', quote: 'GBP' },
@@ -247,13 +269,23 @@
       commodities: [
         { pair: 'XAU/USD', base: 'XAU', quote: 'USD' },
         { pair: 'XAG/USD', base: 'XAG', quote: 'USD' },
+        { pair: 'XPT', base: 'XPT', quote: null },
+        { pair: 'XPD', base: 'XPD', quote: null },
+        { pair: 'COPPER', base: 'COPPER', quote: null },
         { pair: 'WTI', base: 'WTI', quote: null },
+        { pair: 'NATGAS', base: 'NATGAS', quote: null },
+      ],
+      agriculture: [
+        { pair: 'CORN', base: 'CORN', quote: null },
+        { pair: 'WHEAT', base: 'WHEAT', quote: null },
+        { pair: 'SOYBEAN', base: 'SOYBEAN', quote: null },
       ],
       indices: [
         { pair: 'US500', base: 'US500', quote: null },
         { pair: 'US100', base: 'US100', quote: null },
         { pair: 'US30', base: 'US30', quote: null },
         { pair: 'US2000', base: 'US2000', quote: null },
+        { pair: 'NIKKEI', base: 'NIKKEI', quote: null },
       ]
     };
 
@@ -451,8 +483,11 @@
     function createBaseCard(id, value) {
       const names = {
         DXY: 'USD Index', EUR: 'Euro', GBP: 'Pound', JPY: 'Yen', AUD: 'Aussie', CAD: 'Loonie',
-        NZD: 'Kiwi', CHF: 'Franc', XAU: 'Gold', XAG: 'Silver', WTI: 'Oil',
-        US500: 'S&P 500', US100: 'Nasdaq', US30: 'Dow', US2000: 'Russell'
+        NZD: 'Kiwi', CHF: 'Franc', MXN: 'Peso', ZAR: 'Rand',
+        XAU: 'Gold', XAG: 'Silver', XPT: 'Platinum', XPD: 'Palladium', COPPER: 'Copper',
+        WTI: 'Oil', NATGAS: 'Nat Gas',
+        CORN: 'Corn', WHEAT: 'Wheat', SOYBEAN: 'Soybeans',
+        US500: 'S&P 500', US100: 'Nasdaq', US30: 'Dow', US2000: 'Russell', NIKKEI: 'Nikkei'
       };
       return `
         <div class="base-card">
@@ -491,6 +526,8 @@
         sortPairsByValue(pairs.crosses).map(createCard).join('');
       document.getElementById('commodities-grid').innerHTML = 
         sortPairsByValue(pairs.commodities).map(createCard).join('');
+      document.getElementById('agriculture-grid').innerHTML = 
+        sortPairsByValue(pairs.agriculture).map(createCard).join('');
       document.getElementById('indices-grid').innerHTML = 
         sortPairsByValue(pairs.indices).map(createCard).join('');
       
@@ -503,7 +540,7 @@
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       element.classList.add('active');
       
-      const sections = ['currencies', 'minors', 'crosses', 'commodities', 'indices'];
+      const sections = ['currencies', 'minors', 'crosses', 'commodities', 'agriculture', 'indices'];
       sections.forEach(s => {
         document.getElementById(s).classList.toggle('hidden', section !== 'all' && section !== s);
       });
