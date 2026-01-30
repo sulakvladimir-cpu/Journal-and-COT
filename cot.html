@@ -132,7 +132,9 @@
       <div class="tab" onclick="showSection('crosses', this)">Crosses</div>
       <div class="tab" onclick="showSection('commodities', this)">Commodities</div>
       <div class="tab" onclick="showSection('agriculture', this)">Agriculture</div>
+      <div class="tab" onclick="showSection('softs', this)">Softs</div>
       <div class="tab" onclick="showSection('indices', this)">Indices</div>
+      <div class="tab" onclick="showSection('bonds', this)">Bonds</div>
     </div>
     
     <div id="currencies" class="section">
@@ -160,9 +162,19 @@
       <div class="grid" id="agriculture-grid"></div>
     </div>
     
+    <div id="softs" class="section">
+      <div class="section-title">☕ Softs (Sorted by Strength)</div>
+      <div class="grid" id="softs-grid"></div>
+    </div>
+    
     <div id="indices" class="section">
       <div class="section-title">📈 Indices (Sorted by Strength)</div>
       <div class="grid" id="indices-grid"></div>
+    </div>
+    
+    <div id="bonds" class="section">
+      <div class="section-title">🏦 Bonds (Sorted by Strength)</div>
+      <div class="grid" id="bonds-grid"></div>
     </div>
     
     <div class="base-contracts">
@@ -207,6 +219,14 @@
       US30: { search: 'DJIA', exchange: 'CHICAGO BOARD OF TRADE', code: '124603' },
       US2000: { search: 'RUSSELL E-MINI', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '239742', exactMatch: 'RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE' },
       NIKKEI: { search: 'NIKKEI STOCK AVERAGE', exchange: 'CHICAGO MERCANTILE EXCHANGE', code: '240743' },
+      US10Y: { search: 'UST 10Y NOTE', exchange: 'CHICAGO BOARD OF TRADE', code: '043602' },
+      US30Y: { search: 'UST BOND', exchange: 'CHICAGO BOARD OF TRADE', code: '020601' },
+      US5Y: { search: 'UST 5Y NOTE', exchange: 'CHICAGO BOARD OF TRADE', code: '044601' },
+      US2Y: { search: 'UST 2Y NOTE', exchange: 'CHICAGO BOARD OF TRADE', code: '042601' },
+      COTTON: { search: 'COTTON', exchange: 'ICE FUTURES U.S.', code: '033661' },
+      SUGAR: { search: 'SUGAR', exchange: 'ICE FUTURES U.S.', code: '080732' },
+      COFFEE: { search: 'COFFEE', exchange: 'ICE FUTURES U.S.', code: '083731' },
+      COCOA: { search: 'COCOA', exchange: 'ICE FUTURES U.S.', code: '073732' },
     };
 
     // Data storage
@@ -214,7 +234,9 @@
       DXY: 0, EUR: 0, GBP: 0, JPY: 0, AUD: 0, CAD: 0, NZD: 0, CHF: 0, MXN: 0, ZAR: 0,
       XAU: 0, XAG: 0, XPT: 0, XPD: 0, COPPER: 0, WTI: 0, NATGAS: 0,
       CORN: 0, WHEAT: 0, SOYBEAN: 0,
+      COTTON: 0, SUGAR: 0, COFFEE: 0, COCOA: 0,
       US500: 0, US100: 0, US30: 0, US2000: 0, NIKKEI: 0,
+      US10Y: 0, US30Y: 0, US5Y: 0, US2Y: 0,
     };
     
     let reportDate = '';
@@ -280,12 +302,24 @@
         { pair: 'WHEAT', base: 'WHEAT', quote: null },
         { pair: 'SOYBEAN', base: 'SOYBEAN', quote: null },
       ],
+      softs: [
+        { pair: 'COTTON', base: 'COTTON', quote: null },
+        { pair: 'SUGAR', base: 'SUGAR', quote: null },
+        { pair: 'COFFEE', base: 'COFFEE', quote: null },
+        { pair: 'COCOA', base: 'COCOA', quote: null },
+      ],
       indices: [
         { pair: 'US500', base: 'US500', quote: null },
         { pair: 'US100', base: 'US100', quote: null },
         { pair: 'US30', base: 'US30', quote: null },
         { pair: 'US2000', base: 'US2000', quote: null },
         { pair: 'NIKKEI', base: 'NIKKEI', quote: null },
+      ],
+      bonds: [
+        { pair: 'US10Y', base: 'US10Y', quote: null },
+        { pair: 'US30Y', base: 'US30Y', quote: null },
+        { pair: 'US5Y', base: 'US5Y', quote: null },
+        { pair: 'US2Y', base: 'US2Y', quote: null },
       ]
     };
 
@@ -487,7 +521,9 @@
         XAU: 'Gold', XAG: 'Silver', XPT: 'Platinum', XPD: 'Palladium', COPPER: 'Copper',
         WTI: 'Oil', NATGAS: 'Nat Gas',
         CORN: 'Corn', WHEAT: 'Wheat', SOYBEAN: 'Soybeans',
-        US500: 'S&P 500', US100: 'Nasdaq', US30: 'Dow', US2000: 'Russell', NIKKEI: 'Nikkei'
+        COTTON: 'Cotton', SUGAR: 'Sugar', COFFEE: 'Coffee', COCOA: 'Cocoa',
+        US500: 'S&P 500', US100: 'Nasdaq', US30: 'Dow', US2000: 'Russell', NIKKEI: 'Nikkei',
+        US10Y: '10Y Treasury', US30Y: '30Y Treasury', US5Y: '5Y Treasury', US2Y: '2Y Treasury'
       };
       return `
         <div class="base-card">
@@ -528,8 +564,12 @@
         sortPairsByValue(pairs.commodities).map(createCard).join('');
       document.getElementById('agriculture-grid').innerHTML = 
         sortPairsByValue(pairs.agriculture).map(createCard).join('');
+      document.getElementById('softs-grid').innerHTML = 
+        sortPairsByValue(pairs.softs).map(createCard).join('');
       document.getElementById('indices-grid').innerHTML = 
         sortPairsByValue(pairs.indices).map(createCard).join('');
+      document.getElementById('bonds-grid').innerHTML = 
+        sortPairsByValue(pairs.bonds).map(createCard).join('');
       
       // Sort base contracts from most positive to most negative
       document.getElementById('base-grid').innerHTML = 
@@ -540,7 +580,7 @@
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       element.classList.add('active');
       
-      const sections = ['currencies', 'minors', 'crosses', 'commodities', 'agriculture', 'indices'];
+      const sections = ['currencies', 'minors', 'crosses', 'commodities', 'agriculture', 'softs', 'indices', 'bonds'];
       sections.forEach(s => {
         document.getElementById(s).classList.toggle('hidden', section !== 'all' && section !== s);
       });
